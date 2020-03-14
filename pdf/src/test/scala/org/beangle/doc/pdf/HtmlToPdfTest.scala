@@ -21,7 +21,6 @@ package org.beangle.doc.pdf
 import java.io.File
 
 import com.itextpdf.text.pdf.PdfWriter
-import org.beangle.doc.core.Orientations
 
 object HtmlToPdfTest {
 
