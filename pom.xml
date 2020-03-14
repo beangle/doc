@@ -8,7 +8,7 @@
   <groupId>org.beangle.doc</groupId>
   <artifactId>beangle-doc-parent_2.13</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <name>Beangle Doc Parent</name>
 
   <modules>
@@ -34,7 +34,7 @@
   </scm>
 
   <properties>
-    <commons.version>5.1.11</commons.version>
+    <commons.version>5.1.12</commons.version>
   </properties>
 
   <dependencyManagement>

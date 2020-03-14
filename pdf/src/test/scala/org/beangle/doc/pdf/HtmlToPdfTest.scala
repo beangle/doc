@@ -20,7 +20,7 @@ package org.beangle.doc.pdf
 
 import java.io.File
 
-import org.beangle.doc.core.Orientations
+import com.itextpdf.text.pdf.PdfWriter
 
 object HtmlToPdfTest {
 
@@ -32,7 +32,8 @@ object HtmlToPdfTest {
     val url = args(0)
     val out = new File(url).getParent + File.separator + "temp.pdf"
 
-    SPD.convertFile(new File(url), new File(out), Map("orientation" -> Orientations.Landscape.name))
+    SPD.convertFile(new File(url), new File(out),Map.empty)
+    Encryptor.encrypt(new File(out),Some("123"),"456",PdfWriter.ALLOW_PRINTING)
     println("convert " + url + " to " + out)
   }
 }
