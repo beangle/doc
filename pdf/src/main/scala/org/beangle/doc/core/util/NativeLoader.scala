@@ -31,7 +31,7 @@ class NativeLoader(groupId: String, artifactId: String) {
 
   def load[T <: Library](path: String,  version: String, clazz: Class[T], libraryWrapper: LibraryWrapper[T]): T = {
     val dirs = Dirs.on(RepositoryHome).mkdirs(ArtifactHome)
-    val versions = dirs.cd(ArtifactHome).ls
+    val versions = dirs.cd(ArtifactHome).ls()
 
     var dll: File = null
     if (versions.contains(version)) {

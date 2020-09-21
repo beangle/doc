@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>27.0</version>
+    <version>28.0</version>
   </parent>
   <groupId>org.beangle.doc</groupId>
   <artifactId>beangle-doc-parent_2.13</artifactId>
@@ -34,7 +34,7 @@
   </scm>
 
   <properties>
-    <commons.version>5.1.12</commons.version>
+    <commons.version>5.2.0</commons.version>
   </properties>
 
   <dependencyManagement>

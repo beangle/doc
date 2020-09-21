@@ -47,7 +47,7 @@ class Htmltopdf {
   private val progressCallbacks = Collections.newBuffer[Consumer[ProgressPhase]]
   private val finishedCallbacks = Collections.newBuffer[Consumer[Boolean]]
 
-  def this(initSettings: Map[String, String]) {
+  def this(initSettings: Map[String, String]) = {
     this()
     this.settings ++= initSettings
   }
