@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.beangle.doc</groupId>
     <artifactId>beangle-doc-parent_2.13</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>beangle-doc-pdf_2.13</artifactId>
