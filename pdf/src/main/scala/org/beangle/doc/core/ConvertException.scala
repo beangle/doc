@@ -21,15 +21,15 @@ package org.beangle.doc.core
 class ConvertException(message: String, cause: Throwable, enableSuppression: Boolean, writableStackTrace: Boolean)
   extends RuntimeException(message, cause, enableSuppression, writableStackTrace) {
 
-  def this(message: String) {
+  def this(message: String) = {
     this(message, null, true, true)
   }
 
-  def this(message: String, cause: Throwable) {
+  def this(message: String, cause: Throwable) = {
     this(message, cause, true, true)
   }
 
-  def this(cause: Throwable) {
+  def this(cause: Throwable) = {
     this(null, cause, true, true)
   }
 }

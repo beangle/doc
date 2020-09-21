@@ -46,7 +46,7 @@ class WKPage(val data: String) {
     CollectionConverters.asJava(settings)
   }
 
-  def this(data: String, initSetting: Map[String, String]) {
+  def this(data: String, initSetting: Map[String, String]) = {
     this(data)
     settings ++= initSetting
   }
