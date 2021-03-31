@@ -45,7 +45,7 @@ class NativeLoader(groupId: String, artifactId: String) {
         rs match {
           case None =>
             if (Platform.isWindows) {
-              val evnDllPath = path + "/" + artifactId + getSuffix
+              val evnDllPath = path + File.separator + artifactId + getSuffix
               val envDll = new File(evnDllPath)
               if (envDll.exists()) {
                 val instance = jna.Native.load(envDll.getAbsolutePath, clazz)

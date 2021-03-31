@@ -26,5 +26,4 @@ object ErrorPolicies extends Enumeration {
   val Abort = new Policy("abort")
   val Skip = new Policy("skip")
   val Ignore = new Policy("ignore")
-
 }
