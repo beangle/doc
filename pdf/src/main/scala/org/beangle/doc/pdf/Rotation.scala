@@ -38,7 +38,7 @@ object Rotation {
       val page = pdfWriter.getImportedPage(pdfReader, i)
       val image = Image.getInstance(page)
       image.setRotationDegrees(degree)
-      image.setAbsolutePosition(0, 0)
+      image.setAbsolutePosition(0.toFloat, 0.toFloat)
       document.add(image)
       i += 1
     }
