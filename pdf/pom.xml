@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.beangle.doc</groupId>
     <artifactId>beangle-doc-parent_2.13</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>beangle-doc-pdf_2.13</artifactId>
@@ -16,10 +16,6 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
     <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>itextpdf</artifactId>
@@ -35,13 +31,11 @@
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15to18</artifactId>
       <version>1.68</version>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15to18</artifactId>
       <version>1.68</version>
-      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

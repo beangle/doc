@@ -8,11 +8,12 @@
   <groupId>org.beangle.doc</groupId>
   <artifactId>beangle-doc-parent_2.13</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
   <name>Beangle Doc Parent</name>
 
   <modules>
     <module>pdf</module>
+    <module>docx</module>
   </modules>
 
   <description>
@@ -51,6 +52,10 @@
     <dependency>
       <groupId>org.beangle.commons</groupId>
       <artifactId>beangle-commons-core_2.13</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
  </dependencies>
 </project>
