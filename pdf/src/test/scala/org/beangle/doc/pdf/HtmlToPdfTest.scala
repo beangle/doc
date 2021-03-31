@@ -32,7 +32,7 @@ object HtmlToPdfTest {
     val url = args(0)
     val out = new File(url).getParent + File.separator + "temp.pdf"
 
-    SPD.convertFile(new File(url), new File(out),Map.empty)
+    SPD.convertFile(new File(url), new File(out),Map("orientation"->"Landscape"))
     Encryptor.encrypt(new File(out),Some("123"),"456",PdfWriter.ALLOW_PRINTING)
     println("convert " + url + " to " + out)
   }
