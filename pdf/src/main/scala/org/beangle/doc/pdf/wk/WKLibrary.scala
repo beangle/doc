@@ -18,11 +18,12 @@
  */
 package org.beangle.doc.pdf.wk
 
-import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors}
-
 import com.sun.jna.ptr.PointerByReference
-import com.sun.jna.{Callback, Library, Memory, Pointer}
-import org.beangle.doc.core.util.{NativeLoader, LibraryWrapper}
+import com.sun.jna.{Callback, Memory, Pointer}
+import org.beangle.doc.core.ProgressPhase
+import org.beangle.doc.core.util.{NativeLibrary, NativeLoader}
+
+import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors}
 
 object WKLibrary {
 
@@ -38,21 +39,8 @@ object WKLibrary {
   private def loadLibrary(): WKLibrary = {
     executorService.submit(new Callable[WKLibrary]() {
       override def call(): WKLibrary = {
-        new NativeLoader("wkhtmltopdf", "wkhtmltox")
-          .load("C:\\Program Files\\wkhtmltopdf\\bin", "lastest",
-            classOf[WKLibrary], new LibraryWrapper[WKLibrary] {
-              override def version(t: WKLibrary): String = {
-                t.wkhtmltopdf_version()
-              }
-
-              override def init(t: WKLibrary): Unit = {
-                t.wkhtmltopdf_init(0)
-              }
-
-              override def destroy(t: WKLibrary): Unit = {
-                t.wkhtmltopdf_deinit()
-              }
-            })
+        new NativeLoader("wkhtmltopdf", "libwkhtmltox")
+          .load("C:\\Program Files\\wkhtmltopdf\\bin", "lastest", classOf[WKLibrary])
       }
     }).get()
   }
@@ -75,9 +63,11 @@ object WKLibrary {
 }
 
 /** wkhtmltopdf的C接口
- * 参考C:\Program Files\wkhtmltopdf\include\wkhtmltox\pdf.h
+ *
+ * @see C:\Program Files\wkhtmltopdf\include\wkhtmltox\pdf.h
+ * @see https://wkhtmltopdf.org/libwkhtmltox/pagesettings.html
  */
-trait WKLibrary extends Library {
+trait WKLibrary extends NativeLibrary {
 
   trait wkhtmltopdf_str_callback extends Callback {
     def callback(converter: Pointer, str: String): Unit
@@ -91,12 +81,84 @@ trait WKLibrary extends Library {
     def callback(converter: Pointer, i: Int): Unit
   }
 
+  override def version(): String = {
+    this.wkhtmltopdf_version()
+  }
+
+  override def init(): Unit = {
+    this.wkhtmltopdf_init(0)
+  }
+
+  override def destroy(): Unit = {
+    this.wkhtmltopdf_deinit()
+  }
+
+  def convert(converter: Pointer): Int = {
+    this.wkhtmltopdf_convert(converter)
+  }
+
+  def createGlobalSettings(): Pointer = {
+    this.wkhtmltopdf_create_global_settings()
+  }
+
+  def createObjectSettings(): Pointer = {
+    this.wkhtmltopdf_create_object_settings()
+  }
+
+  def createConverter(globalSettings: Pointer): Pointer = {
+    this.wkhtmltopdf_create_converter(globalSettings)
+  }
+
+  def setGlobal(globalSettings: Pointer, name: String, value: String): Int = {
+    this.wkhtmltopdf_set_global_setting(globalSettings, name, value)
+  }
+
+  def setObject(objectSettings: Pointer, name: String, value: String): Int = {
+    this.wkhtmltopdf_set_object_setting(objectSettings, name, value)
+  }
+
+  def addObject(converter: Pointer, objectSettings: Pointer, data: String): Unit = {
+    this.wkhtmltopdf_add_object(converter, objectSettings, data)
+  }
+
+  def currentPhase(converter: Pointer, percent: Int): ProgressPhase = {
+    val phase = this.wkhtmltopdf_current_phase(converter)
+    val totalPhases = this.wkhtmltopdf_phase_count(converter)
+    val phaseDesc = this.wkhtmltopdf_phase_description(converter, phase)
+    ProgressPhase(phase, phaseDesc, totalPhases, percent)
+  }
+
+  def destroy(globalSetting: Pointer, objectSettingsList: Iterable[Pointer], converter: Pointer): Unit = {
+    this.wkhtmltopdf_destroy_global_settings(globalSetting)
+    objectSettingsList foreach { objectSettings => this.wkhtmltopdf_destroy_object_settings(objectSettings) }
+    this.wkhtmltopdf_destroy_converter(converter)
+  }
+
+  def setWarningCallback(converter: Pointer, cb: wkhtmltopdf_str_callback): Unit = {
+    this.wkhtmltopdf_set_warning_callback(converter, cb)
+  }
+
+  def setErrorCallback(converter: Pointer, cb: wkhtmltopdf_str_callback): Unit = {
+    this.wkhtmltopdf_set_error_callback(converter, cb)
+  }
+
+  def setPhaseChangedCallback(converter: Pointer, cb: wkhtmltopdf_void_callback): Unit = {
+    this.wkhtmltopdf_set_phase_changed_callback(converter, cb)
+  }
+
+  def setProgressChangedCallback(converter: Pointer, cb: wkhtmltopdf_int_callback): Unit = {
+    this.wkhtmltopdf_set_progress_changed_callback(converter, cb)
+  }
+
+  def setFinishedCallback(converter: Pointer, cb: wkhtmltopdf_int_callback): Unit = {
+    this.wkhtmltopdf_set_finished_callback(converter, cb)
+  }
+
   def wkhtmltopdf_init(useGraphics: Int): Int
 
   def wkhtmltopdf_deinit(): Int
 
   def wkhtmltopdf_extended_qt(): Int
-
 
   def wkhtmltopdf_version(): String
 

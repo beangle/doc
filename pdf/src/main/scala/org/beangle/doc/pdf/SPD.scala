@@ -18,6 +18,7 @@
  */
 package org.beangle.doc.pdf
 
+import com.itextpdf.text.pdf.PdfReader
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{ErrorPolicies, PageSizes}
@@ -32,7 +33,7 @@ import java.net.URL
 object SPD extends Logging {
 
   def convertURL(url: URL, pdf: File, settings: Map[String, String] = Map.empty): Boolean = {
-    convert(url.toString, pdf, settings)
+    printToOnePage(url.toString, pdf, settings)
   }
 
   def convertFile(html: File, pdf: File, settings: Map[String, String] = Map.empty): Boolean = {
@@ -40,7 +41,23 @@ object SPD extends Logging {
       logger.error("Cannot find " + html + ", conversion aborted!")
       return false
     }
-    convert(html.toString, pdf, settings)
+    printToOnePage(html.toString, pdf, settings)
+  }
+
+  private def printToOnePage(html: String, pdf: File, settings: Map[String, String]): Boolean = {
+    var result = convert(html, pdf, settings)
+    if (getNumberOfPages(pdf) > 1) {
+      pdf.delete()
+      result = convert(html, pdf, settings + ("disable-smart-shrinking" -> "false"))
+    }
+    result
+  }
+
+  private def getNumberOfPages(pdf: File): Int = {
+    val pdfReader = new PdfReader(pdf.toURI.toURL)
+    val pages = pdfReader.getNumberOfPages
+    pdfReader.close()
+    pages
   }
 
   private def convert(html: String, pdf: File, settings: Map[String, String]): Boolean = {
@@ -51,33 +68,40 @@ object SPD extends Logging {
 
     val htmltopdf = Htmltopdf.create().pageSize(PageSizes.A4)
       .compression(true)
-      .disableSmartShrinking(true) //不要自动适应，会有点小
-      .marginBottom("0in").marginTop("0in") //让应用程序设定边距
-      .marginLeft("0in").marginRight("0in")
+      .margin("0in", "0in", "0in", "0in") //让应用程序设定边距
 
     if (System.getProperty("os.name").toLowerCase.contains("windows")) {
       htmltopdf.dpi(200) //较低的dpi会使得字挤在一起
     }
 
-    val o1 = WKPage.url(html)
+    val page = WKPage.url(html)
       .defaultEncoding("utf8")
       .produceForms(true)
-      .usePrintMediaType(true).enableIntelligentShrinking(false)
+      .usePrintMediaType(true)
       .loadImages(true).handleErrors(ErrorPolicies.Abort)
-    htmltopdf.page(o1)
+
+    if ("true" == settings.getOrElse("disable-smart-shrinking", "true")) {
+      htmltopdf.disableSmartShrinking(true)
+      page.enableIntelligentShrinking(false)
+    } else {
+      htmltopdf.disableSmartShrinking(false)
+      page.enableIntelligentShrinking(true)
+    }
+
+    htmltopdf.page(page)
 
     settings.foreach { case (k, v) =>
       htmltopdf.set(k, v)
     }
     htmltopdf.error(logger.error(_))
-    val isLandscape = htmltopdf.settings.getOrElse("orientation", "-") == "Landscape"
+    val isLandscape = htmltopdf.getSetting("orientation").getOrElse("-") == "Landscape"
     if (isLandscape) {
       val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
       val success = htmltopdf.saveAs(portrait)
       if (success) {
         Rotation.roate(portrait, pdf, -90)
       }
-      true
+      success
     } else {
       htmltopdf.saveAs(pdf)
     }

@@ -18,18 +18,19 @@
  */
 package org.beangle.doc.core.util
 
-import java.io.File
-
 import com.sun.jna
-import com.sun.jna.{Library, Platform}
+import com.sun.jna.Platform
 import org.beangle.commons.io.{Dirs, Files}
 import org.beangle.commons.lang.SystemInfo
+import org.beangle.commons.logging.Logging
 
-class NativeLoader(groupId: String, artifactId: String) {
-  private val ArtifactHome = groupId + "/" + groupId
+import java.io.File
+
+class NativeLoader(groupId: String, artifactId: String) extends Logging {
+  private val ArtifactHome = groupId + "/" + artifactId
   private val RepositoryHome = SystemInfo.user.home + "/.m2/repository"
 
-  def load[T <: Library](path: String,  version: String, clazz: Class[T], libraryWrapper: LibraryWrapper[T]): T = {
+  def load[T <: NativeLibrary](path: String, version: String, clazz: Class[T]): T = {
     val dirs = Dirs.on(RepositoryHome).mkdirs(ArtifactHome)
     val versions = dirs.cd(ArtifactHome).ls()
 
@@ -49,9 +50,9 @@ class NativeLoader(groupId: String, artifactId: String) {
               val envDll = new File(evnDllPath)
               if (envDll.exists()) {
                 val instance = jna.Native.load(envDll.getAbsolutePath, clazz)
-                libraryWrapper.init(instance)
-                val newVersion = libraryWrapper.version(instance)
-                libraryWrapper.destroy(instance)
+                instance.init()
+                val newVersion = instance.version
+                instance.destroy()
                 dll = getBundleFile(newVersion)
                 Files.copy(envDll, dll)
               } else {
@@ -68,7 +69,8 @@ class NativeLoader(groupId: String, artifactId: String) {
     }
 
     val instance = jna.Native.load(dll.getAbsolutePath, clazz)
-    libraryWrapper.init(instance)
+    instance.init()
+    logger.info(s"Loading libwkhtmltox ${instance.version}")
     instance
   }
 
@@ -82,15 +84,7 @@ class NativeLoader(groupId: String, artifactId: String) {
   }
 
   private def getBundleName(version: String): String = {
-    artifactId +"-" + version + getSuffix
+    artifactId + "-" + version + getSuffix
   }
 }
 
-trait LibraryWrapper[T <: Library] {
-
-  def version(t: T): String
-
-  def init(t: T): Unit
-
-  def destroy(t: T): Unit
-}
