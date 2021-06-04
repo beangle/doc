@@ -101,7 +101,7 @@ object SPD extends Logging {
       if (success) {
         Rotation.roate(portrait, pdf, -90)
       }
-      true
+      success
     } else {
       htmltopdf.saveAs(pdf)
     }
