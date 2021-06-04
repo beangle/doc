@@ -19,14 +19,14 @@
 package org.beangle.doc.core.util
 
 import java.io.File
-
 import com.sun.jna
 import com.sun.jna.{Library, Platform}
 import org.beangle.commons.io.{Dirs, Files}
 import org.beangle.commons.lang.SystemInfo
+import org.beangle.commons.logging.Logging
 
-class NativeLoader(groupId: String, artifactId: String) {
-  private val ArtifactHome = groupId + "/" + groupId
+class NativeLoader(groupId: String, artifactId: String) extends Logging{
+  private val ArtifactHome = groupId + "/" + artifactId
   private val RepositoryHome = SystemInfo.user.home + "/.m2/repository"
 
   def load[T <: Library](path: String,  version: String, clazz: Class[T], libraryWrapper: LibraryWrapper[T]): T = {
@@ -69,6 +69,7 @@ class NativeLoader(groupId: String, artifactId: String) {
 
     val instance = jna.Native.load(dll.getAbsolutePath, clazz)
     libraryWrapper.init(instance)
+    logger.info(s"Loading wkhtmltox ${libraryWrapper.version(instance)}")
     instance
   }
 

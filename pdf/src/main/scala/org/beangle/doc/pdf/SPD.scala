@@ -18,6 +18,7 @@
  */
 package org.beangle.doc.pdf
 
+import com.itextpdf.text.pdf.PdfReader
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{ErrorPolicies, PageSizes}
@@ -32,7 +33,7 @@ import java.net.URL
 object SPD extends Logging {
 
   def convertURL(url: URL, pdf: File, settings: Map[String, String] = Map.empty): Boolean = {
-    convert(url.toString, pdf, settings)
+    printToOnePage(url.toString, pdf, settings)
   }
 
   def convertFile(html: File, pdf: File, settings: Map[String, String] = Map.empty): Boolean = {
@@ -40,7 +41,22 @@ object SPD extends Logging {
       logger.error("Cannot find " + html + ", conversion aborted!")
       return false
     }
-    convert(html.toString, pdf, settings)
+    printToOnePage(html.toString, pdf, settings)
+  }
+
+  private def printToOnePage(html: String, pdf: File, settings: Map[String, String]): Boolean = {
+    var result = convert(html, pdf, settings)
+    var zoom = 1d
+    var pdfReader = new PdfReader(pdf.toURI.toURL)
+    while (pdfReader.getNumberOfPages > 1) {
+      pdfReader.close()
+      pdf.delete()
+      result = convert(html, pdf, settings + ("zoom" -> String.valueOf(zoom - 0.1)))
+      zoom -= 0.1
+      pdfReader = new PdfReader(pdf.toURI.toURL)
+    }
+    pdfReader.close()
+    result
   }
 
   private def convert(html: String, pdf: File, settings: Map[String, String]): Boolean = {
@@ -51,9 +67,14 @@ object SPD extends Logging {
 
     val htmltopdf = Htmltopdf.create().pageSize(PageSizes.A4)
       .compression(true)
-      .disableSmartShrinking(true) //不要自动适应，会有点小
       .marginBottom("0in").marginTop("0in") //让应用程序设定边距
       .marginLeft("0in").marginRight("0in")
+
+    if (settings.contains("zoom")) {
+      htmltopdf.enableSmartShrinking()
+    } else {
+      htmltopdf.disableSmartShrinking() //不要自动适应，会有点小
+    }
 
     if (System.getProperty("os.name").toLowerCase.contains("windows")) {
       htmltopdf.dpi(200) //较低的dpi会使得字挤在一起

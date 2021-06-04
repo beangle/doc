@@ -97,7 +97,6 @@ trait WKLibrary extends Library {
 
   def wkhtmltopdf_extended_qt(): Int
 
-
   def wkhtmltopdf_version(): String
 
   def wkhtmltopdf_create_global_settings(): Pointer

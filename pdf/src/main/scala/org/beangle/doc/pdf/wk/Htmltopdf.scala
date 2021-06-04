@@ -19,13 +19,13 @@
 package org.beangle.doc.pdf.wk
 
 
-import java.io.{ByteArrayInputStream, File, InputStream}
-import java.util.function.Consumer
-
 import com.sun.jna.Pointer
 import com.sun.jna.ptr.PointerByReference
 import org.beangle.commons.collection.Collections
 import org.beangle.doc.core.{ConvertException, Orientations, PageSizes, ProgressPhase}
+
+import java.io.{ByteArrayInputStream, File, InputStream}
+import java.util.function.Consumer
 
 object Htmltopdf {
   def create(): Htmltopdf = {
@@ -40,7 +40,7 @@ object Htmltopdf {
 /** 转换HTML到PDF工具类
  */
 class Htmltopdf {
-  val settings: collection.mutable.Map[String, String] = Collections.newMap[String, String]
+  private val settings = Collections.newMap[String, String]
   private val pages = Collections.newBuffer[WKPage]
   private val warningCallbacks = Collections.newBuffer[Consumer[String]]
   private val errorCallbacks = Collections.newBuffer[Consumer[String]]
@@ -52,9 +52,21 @@ class Htmltopdf {
     this.settings ++= initSettings
   }
 
+  /** 缩放设置,1是默认，大于1 表示缩小 */
+  def zoom(f: Float): this.type = {
+    set("zoom", f)
+  }
+
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
-  def disableSmartShrinking(disableSmartShrinking: Boolean): this.type = {
-    set("disable-smart-shrinking", disableSmartShrinking)
+  def disableSmartShrinking(): this.type = {
+    set("enable-smart-shrinking", None)
+    set("disable-smart-shrinking", "true")
+  }
+
+  /** 启用缩小策略(WebKit会依据pixel/dpi比例) */
+  def enableSmartShrinking(): this.type = {
+    set("disable-smart-shrinking", None)
+    set("enable-smart-shrinking", "true")
   }
 
   /** 纸张大小(A3,A4,A5..) */
@@ -193,7 +205,7 @@ class Htmltopdf {
       false
     } else {
       set("out", path.getAbsolutePath)
-      withConverter(settings, (c, library) => library.wkhtmltopdf_convert(c) == 1)
+      withConverter((p, library) => library.wkhtmltopdf_convert(p) == 1)
     }
   }
 
@@ -203,7 +215,7 @@ class Htmltopdf {
    */
   def saveAs(): InputStream = {
     settings.remove("out")
-    withConverter(settings, (point: Pointer, library: WKLibrary) => {
+    withConverter((point: Pointer, library: WKLibrary) => {
       val log = Collections.newBuffer[String]
       warning(w => log += ("Warning: " + w))
       error(e => log += ("Error: " + e))
@@ -236,13 +248,12 @@ class Htmltopdf {
 
   /** 执行转换
    *
-   * @param settings 参数设置
    * @param consumer 结果通知函数
    * @tparam T 结果类型
    * @return 结果
    */
-  private def withConverter[T](settings: collection.Map[String, String], consumer: (Pointer, WKLibrary) => T): T = {
-    WKLibrary.withInstance(library => {
+  private def withConverter[T](consumer: (Pointer, WKLibrary) => T): T = {
+    WKLibrary.withInstance { library =>
       val globalSettings = library.wkhtmltopdf_create_global_settings()
       settings.foreach { case (k, v) => library.wkhtmltopdf_set_global_setting(globalSettings, k, v) }
       val converter = library.wkhtmltopdf_create_converter(globalSettings)
@@ -266,6 +277,6 @@ class Htmltopdf {
       } finally {
         library.wkhtmltopdf_destroy_converter(converter)
       }
-    })
+    }
   }
 }
