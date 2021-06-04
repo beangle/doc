@@ -48,7 +48,6 @@ object SPD extends Logging {
     var result = convert(html, pdf, settings)
     if (getNumberOfPages(pdf) > 1) {
       pdf.delete()
-      logger.info("enable smart shrinking")
       result = convert(html, pdf, settings + ("disable-smart-shrinking" -> "false"))
     }
     result

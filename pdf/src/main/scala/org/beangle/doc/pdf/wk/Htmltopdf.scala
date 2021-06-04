@@ -188,7 +188,7 @@ class Htmltopdf {
       false
     } else {
       set("out", path.getAbsolutePath)
-      withConverter((p, library) => library.wkhtmltopdf_convert(p) == 1)
+      withConverter((p, library) => library.convert(p) == 1)
     }
   }
 
@@ -198,13 +198,13 @@ class Htmltopdf {
    */
   def saveAs(): InputStream = {
     settings.remove("out")
-    withConverter((point: Pointer, library: WKLibrary) => {
+    withConverter((converter: Pointer, library: WKLibrary) => {
       val log = Collections.newBuffer[String]
       warning(w => log += ("Warning: " + w))
       error(e => log += ("Error: " + e))
       val out = new PointerByReference()
-      if (library.wkhtmltopdf_convert(point) == 1) {
-        val size = library.wkhtmltopdf_get_output(point, out)
+      if (library.convert(converter) == 1) {
+        val size = library.wkhtmltopdf_get_output(converter, out)
         val pdfBytes = new Array[Byte](size.asInstanceOf[Int])
         out.getValue.read(0, pdfBytes, 0, pdfBytes.length)
         return new ByteArrayInputStream(pdfBytes)
@@ -237,28 +237,26 @@ class Htmltopdf {
    */
   private def withConverter[T](consumer: (Pointer, WKLibrary) => T): T = {
     WKLibrary.withInstance { library =>
-      val globalSettings = library.wkhtmltopdf_create_global_settings()
-      settings.foreach { case (k, v) => library.wkhtmltopdf_set_global_setting(globalSettings, k, v) }
-      val converter = library.wkhtmltopdf_create_converter(globalSettings)
-      library.wkhtmltopdf_set_warning_callback(converter, (_, s) => warningCallbacks.foreach(_.accept(s)))
-      library.wkhtmltopdf_set_error_callback(converter, (_, s) => errorCallbacks.foreach(_.accept(s)))
-      library.wkhtmltopdf_set_progress_changed_callback(converter, (c, phaseProgress) => {
-        val phase = library.wkhtmltopdf_current_phase(c)
-        val totalPhases = library.wkhtmltopdf_phase_count(c)
-        val phaseDesc = library.wkhtmltopdf_phase_description(c, phase)
-        val progress = ProgressPhase(phase, phaseDesc, totalPhases, phaseProgress)
-        progressCallbacks.foreach(_.accept(progress))
+      val global = library.createGlobalSettings()
+      settings.foreach { case (k, v) => library.setGlobal(global, k, v) }
+      val converter = library.createConverter(global)
+      library.setWarningCallback(converter, (_, s) => warningCallbacks.foreach(_.accept(s)))
+      library.setErrorCallback(converter, (_, s) => errorCallbacks.foreach(_.accept(s)))
+      library.setProgressChangedCallback(converter, (c, percent) => {
+        progressCallbacks.foreach(_.accept(library.currentPhase(c, percent)))
       })
-      library.wkhtmltopdf_set_finished_callback(converter, (_, i) => finishedCallbacks.foreach(_.accept(i == 1)))
+      library.setFinishedCallback(converter, (_, i) => finishedCallbacks.foreach(_.accept(i == 1)))
+      val objectSettingList = Collections.newBuffer[Pointer]
       try {
         pages foreach { page =>
-          val objectSettings = library.wkhtmltopdf_create_object_settings()
-          page.settings.foreach { case (k, v) => library.wkhtmltopdf_set_object_setting(objectSettings, k, v) }
-          library.wkhtmltopdf_add_object(converter, objectSettings, page.data)
+          val objectSettings = library.createObjectSettings()
+          objectSettingList += objectSettings
+          page.settings.foreach { case (k, v) => library.setObject(objectSettings, k, v) }
+          library.addObject(converter, objectSettings, page.data)
         }
         consumer.apply(converter, library)
       } finally {
-        library.wkhtmltopdf_destroy_converter(converter)
+        library.destroy(global, objectSettingList, converter)
       }
     }
   }
