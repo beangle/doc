@@ -38,7 +38,7 @@ object WKLibrary {
   private def loadLibrary(): WKLibrary = {
     executorService.submit(new Callable[WKLibrary]() {
       override def call(): WKLibrary = {
-        new NativeLoader("wkhtmltopdf", "wkhtmltox")
+        new NativeLoader("wkhtmltopdf", "libwkhtmltox")
           .load("C:\\Program Files\\wkhtmltopdf\\bin", "lastest",
             classOf[WKLibrary], new LibraryWrapper[WKLibrary] {
               override def version(t: WKLibrary): String = {

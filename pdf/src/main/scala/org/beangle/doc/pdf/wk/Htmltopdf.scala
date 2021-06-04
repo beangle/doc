@@ -38,6 +38,9 @@ object Htmltopdf {
 }
 
 /** 转换HTML到PDF工具类
+ *
+ * @see https://github.com/wooio/htmltopdf-java
+ * @see https://wkhtmltopdf.org/libwkhtmltox/pagesettings.html
  */
 class Htmltopdf {
   private val settings = Collections.newMap[String, String]
@@ -52,21 +55,13 @@ class Htmltopdf {
     this.settings ++= initSettings
   }
 
-  /** 缩放设置,1是默认，大于1 表示缩小 */
-  def zoom(f: Float): this.type = {
-    set("zoom", f)
+  def getSetting(name: String): Option[String] = {
+    settings.get(name)
   }
 
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
-  def disableSmartShrinking(): this.type = {
-    set("enable-smart-shrinking", None)
-    set("disable-smart-shrinking", "true")
-  }
-
-  /** 启用缩小策略(WebKit会依据pixel/dpi比例) */
-  def enableSmartShrinking(): this.type = {
-    set("disable-smart-shrinking", None)
-    set("enable-smart-shrinking", "true")
+  def disableSmartShrinking(disable: Boolean): this.type = {
+    set("disable-smart-shrinking", disable)
   }
 
   /** 纸张大小(A3,A4,A5..) */
@@ -125,24 +120,12 @@ class Htmltopdf {
     set("useCompression", compression)
   }
 
-  /** 顶部边距(使用css单位，例如5in,15px) */
-  def marginTop(marginTop: String): this.type = {
+  /** 边距(使用css单位，例如5in,15px),顺序按照 顶、右、底、左 */
+  def margin(marginTop: String, marginRight: String, marginBottom: String, marginLeft: String): this.type = {
     set("margin.top", marginTop)
-  }
-
-  /** 底部边距 */
-  def marginBottom(marginBottom: String): this.type = {
-    set("margin.bottom", marginBottom)
-  }
-
-  /** 左边距 */
-  def marginLeft(marginLeft: String): this.type = {
-    set("margin.left", marginLeft)
-  }
-
-  /** 右边距 */
-  def marginRight(marginRight: String): this.type = {
     set("margin.right", marginRight)
+    set("margin.bottom", marginBottom)
+    set("margin.left", marginLeft)
   }
 
   /** 图片的最大DPI */

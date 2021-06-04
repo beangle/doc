@@ -46,17 +46,19 @@ object SPD extends Logging {
 
   private def printToOnePage(html: String, pdf: File, settings: Map[String, String]): Boolean = {
     var result = convert(html, pdf, settings)
-    var zoom = 1d
-    var pdfReader = new PdfReader(pdf.toURI.toURL)
-    while (pdfReader.getNumberOfPages > 1) {
-      pdfReader.close()
+    if (getNumberOfPages(pdf) > 1) {
       pdf.delete()
-      result = convert(html, pdf, settings + ("zoom" -> String.valueOf(zoom - 0.1)))
-      zoom -= 0.1
-      pdfReader = new PdfReader(pdf.toURI.toURL)
+      logger.info("enable smart shrinking")
+      result = convert(html, pdf, settings + ("disable-smart-shrinking" -> "false"))
     }
-    pdfReader.close()
     result
+  }
+
+  private def getNumberOfPages(pdf: File): Int = {
+    val pdfReader = new PdfReader(pdf.toURI.toURL)
+    val pages = pdfReader.getNumberOfPages
+    pdfReader.close()
+    pages
   }
 
   private def convert(html: String, pdf: File, settings: Map[String, String]): Boolean = {
@@ -67,31 +69,33 @@ object SPD extends Logging {
 
     val htmltopdf = Htmltopdf.create().pageSize(PageSizes.A4)
       .compression(true)
-      .marginBottom("0in").marginTop("0in") //让应用程序设定边距
-      .marginLeft("0in").marginRight("0in")
-
-    if (settings.contains("zoom")) {
-      htmltopdf.enableSmartShrinking()
-    } else {
-      htmltopdf.disableSmartShrinking() //不要自动适应，会有点小
-    }
+      .margin("0in", "0in", "0in", "0in") //让应用程序设定边距
 
     if (System.getProperty("os.name").toLowerCase.contains("windows")) {
       htmltopdf.dpi(200) //较低的dpi会使得字挤在一起
     }
 
-    val o1 = WKPage.url(html)
+    val page = WKPage.url(html)
       .defaultEncoding("utf8")
       .produceForms(true)
-      .usePrintMediaType(true).enableIntelligentShrinking(false)
+      .usePrintMediaType(true)
       .loadImages(true).handleErrors(ErrorPolicies.Abort)
-    htmltopdf.page(o1)
+
+    if ("true" == settings.getOrElse("disable-smart-shrinking", "true")) {
+      htmltopdf.disableSmartShrinking(true)
+      page.enableIntelligentShrinking(false)
+    } else {
+      htmltopdf.disableSmartShrinking(false)
+      page.enableIntelligentShrinking(true)
+    }
+
+    htmltopdf.page(page)
 
     settings.foreach { case (k, v) =>
       htmltopdf.set(k, v)
     }
     htmltopdf.error(logger.error(_))
-    val isLandscape = htmltopdf.settings.getOrElse("orientation", "-") == "Landscape"
+    val isLandscape = htmltopdf.getSetting("orientation").getOrElse("-") == "Landscape"
     if (isLandscape) {
       val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
       val success = htmltopdf.saveAs(portrait)
