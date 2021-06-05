@@ -46,7 +46,9 @@ class NativeLoader(groupId: String, artifactId: String) extends Logging {
         rs match {
           case None =>
             if (Platform.isWindows) {
-              val evnDllPath = path + File.separator + artifactId + getSuffix
+              var dllName = artifactId + getSuffix
+              if (dllName.startsWith("lib")) dllName = dllName.substring(3)
+              val evnDllPath = path + File.separator + dllName
               val envDll = new File(evnDllPath)
               if (envDll.exists()) {
                 val instance = jna.Native.load(envDll.getAbsolutePath, clazz)

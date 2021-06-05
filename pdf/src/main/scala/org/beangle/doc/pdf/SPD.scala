@@ -22,7 +22,7 @@ import com.itextpdf.text.pdf.PdfReader
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{ErrorPolicies, PageSizes}
-import org.beangle.doc.pdf.wk.{Htmltopdf, WKPage}
+import org.beangle.doc.pdf.wk.{GlobalSettings, Htmltopdf, ObjectSettings, WKPage}
 
 import java.io.File
 import java.net.URL
@@ -47,17 +47,28 @@ object SPD extends Logging {
   private def printToOnePage(html: String, pdf: File, settings: Map[String, String]): Boolean = {
     var result = convert(html, pdf, settings)
     if (getNumberOfPages(pdf) > 1) {
+      logger.debug("enable smart shrinking")
       pdf.delete()
-      result = convert(html, pdf, settings + ("disable-smart-shrinking" -> "false"))
+      result = convert(html, pdf, settings + (GlobalSettings.DisableSmartShrinking -> "false"))
+      var zoom = 0.95d
+      while (getNumberOfPages(pdf) > 1 && zoom > 0.5) {
+        logger.debug(s"start zooming at ${zoom - 0.05}")
+        result = convert(html, pdf, settings + (ObjectSettings.ZoomFactor -> String.valueOf(zoom - 0.05)))
+        zoom -= 0.05
+      }
     }
     result
   }
 
   private def getNumberOfPages(pdf: File): Int = {
-    val pdfReader = new PdfReader(pdf.toURI.toURL)
-    val pages = pdfReader.getNumberOfPages
-    pdfReader.close()
-    pages
+    if (pdf.exists()) {
+      val pdfReader = new PdfReader(pdf.toURI.toURL)
+      val pages = pdfReader.getNumberOfPages
+      pdfReader.close()
+      pages
+    } else {
+      0
+    }
   }
 
   private def convert(html: String, pdf: File, settings: Map[String, String]): Boolean = {
@@ -78,9 +89,9 @@ object SPD extends Logging {
       .defaultEncoding("utf8")
       .produceForms(true)
       .usePrintMediaType(true)
-      .loadImages(true).handleErrors(ErrorPolicies.Abort)
+      .loadImages(true).handleErrors(ErrorPolicies.Ignore)
 
-    if ("true" == settings.getOrElse("disable-smart-shrinking", "true")) {
+    if ("true" == settings.getOrElse(GlobalSettings.DisableSmartShrinking, "true")) {
       htmltopdf.disableSmartShrinking(true)
       page.enableIntelligentShrinking(false)
     } else {
@@ -91,10 +102,17 @@ object SPD extends Logging {
     htmltopdf.page(page)
 
     settings.foreach { case (k, v) =>
-      htmltopdf.set(k, v)
+      if (ObjectSettings.isValid(k)) {
+        page.set(k, v)
+      } else if (GlobalSettings.isValid(k)) {
+        htmltopdf.set(k, v)
+      } else {
+        throw new RuntimeException(s"Cannot recoganize setting $k")
+      }
     }
     htmltopdf.error(logger.error(_))
-    val isLandscape = htmltopdf.getSetting("orientation").getOrElse("-") == "Landscape"
+    //    htmltopdf.progress(x => logger.info(x.toString))
+    val isLandscape = htmltopdf.getSetting(GlobalSettings.Orientation).getOrElse("-") == "Landscape"
     if (isLandscape) {
       val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
       val success = htmltopdf.saveAs(portrait)
