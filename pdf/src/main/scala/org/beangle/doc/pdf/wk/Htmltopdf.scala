@@ -23,6 +23,7 @@ import com.sun.jna.Pointer
 import com.sun.jna.ptr.PointerByReference
 import org.beangle.commons.collection.Collections
 import org.beangle.doc.core.{ConvertException, Orientations, PageSizes, ProgressPhase}
+import org.beangle.doc.pdf.wk.GlobalSettings._
 
 import java.io.{ByteArrayInputStream, File, InputStream}
 import java.util.function.Consumer
@@ -52,7 +53,22 @@ class Htmltopdf {
 
   def this(initSettings: Map[String, String]) = {
     this()
-    this.settings ++= initSettings
+    initSettings foreach { case (k, v) =>
+      if (isValid(k)) settings.put(k, v)
+    }
+  }
+
+  def set(name: String, value: Any): this.type = {
+    if (isValid(name)) {
+      value match {
+        case None => this.settings.remove(name)
+        case null => this.settings.remove(name)
+        case _ => this.settings.put(name, value.toString)
+      }
+    } else {
+      throw new RuntimeException(s"Cannot recognize global settings$name")
+    }
+    this
   }
 
   def getSetting(name: String): Option[String] = {
@@ -61,86 +77,76 @@ class Htmltopdf {
 
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
   def disableSmartShrinking(disable: Boolean): this.type = {
-    set("disable-smart-shrinking", disable)
+    set(DisableSmartShrinking, disable)
   }
 
   /** 纸张大小(A3,A4,A5..) */
   def pageSize(pageSize: PageSizes.PageSize): this.type = {
-    set("size.pageSize", pageSize.name)
-  }
-
-  def set(name: String, value: Any): this.type = {
-    value match {
-      case None => this.settings.remove(name)
-      case null => this.settings.remove(name)
-      case _ => this.settings.put(name, value.toString)
-    }
-    this
+    set(PageSize, pageSize.name)
   }
 
   /** 横向纵向(Landscape) */
   def orientation(orientation: Orientations.Orientation): this.type = {
-    set("orientation", orientation.name)
+    set(Orientation, orientation.name)
   }
 
   /** 输出文档的颜色模式，Color/Grayscale */
   def colorMode(colorMode: String): this.type = {
-    set("colorMode", colorMode)
+    set(ColorMode, colorMode)
   }
 
   /** 文档的DPI */
   def dpi(dpi: Int): this.type = {
-    set("dpi", dpi)
+    set(Dpi, dpi)
   }
 
   /** 打印多份时，是否连续生成一份之后再生成下一份
-   * Whether or not to collate copies.
    */
   def collate(collate: Boolean): this.type = {
-    set("collate", collate)
+    set(Collate, collate)
   }
 
   /** 是否生成文档大纲 */
   def outline(outline: Boolean): this.type = {
-    set("outline", outline)
+    set(Outline, outline)
   }
 
   /** 文档大纲的最大深度 */
   def outlineDepth(outlineDepth: Int): this.type = {
-    set("outlineDepth", outlineDepth)
+    set(OutlineDepth, outlineDepth)
   }
 
   /** 文档的标题 */
   def documentTitle(title: String): this.type = {
-    set("documentTitle", title)
+    set(DocumentTitle, title)
   }
 
   /** 是否启用PDF压缩 */
   def compression(compression: Boolean): this.type = {
-    set("useCompression", compression)
+    set(UseCompression, compression)
   }
 
   /** 边距(使用css单位，例如5in,15px),顺序按照 顶、右、底、左 */
   def margin(marginTop: String, marginRight: String, marginBottom: String, marginLeft: String): this.type = {
-    set("margin.top", marginTop)
-    set("margin.right", marginRight)
-    set("margin.bottom", marginBottom)
-    set("margin.left", marginLeft)
+    set(MarginTop, marginTop)
+    set(MarginRight, marginRight)
+    set(MarginBottom, marginBottom)
+    set(MarginLeft, marginLeft)
   }
 
   /** 图片的最大DPI */
   def imageDpi(imageDpi: Int): this.type = {
-    set("imageDPI", imageDpi)
+    set(ImageDpi, imageDpi)
   }
 
   /** 图片的压缩比(1-100) */
   def imageQuality(quality: Int): this.type = {
-    set("imageQuality", quality)
+    set(ImageQuality, quality)
   }
 
   /** 当加载和存储cookie时使用的jar路径 */
   def cookieJar(cookieJar: String): this.type = {
-    set("load.cookieJar", cookieJar)
+    set(CookieJar, cookieJar)
   }
 
   /** 添加转换过程的监听器 */
