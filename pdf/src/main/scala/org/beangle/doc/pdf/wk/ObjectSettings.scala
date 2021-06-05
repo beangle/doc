@@ -72,8 +72,7 @@ object ObjectSettings {
     HeaderFontSize, HeaderFontName, HeaderLine, HeaderSpacing, HeaderHtmlUrl, HeaderLeft,
     HeaderCenter, HeaderRight,
 
-    TocUseDottedLines, TocCaptionText, TocForwardLinks, TocIndentation, TocBackLinks, TocIncludeSections,
+    TocUseDottedLines, TocCaptionText, TocForwardLinks, TocBackLinks, TocIndentation, TocFontScale, TocIncludeSections,
 
-    UseExternalLinks, UseLocalLinks, ProduceForms, PagesCount, Page
-  )
+    UseExternalLinks, UseLocalLinks, ProduceForms, PagesCount, Page)
 }

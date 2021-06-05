@@ -47,13 +47,14 @@ object SPD extends Logging {
   private def printToOnePage(html: String, pdf: File, settings: Map[String, String]): Boolean = {
     var result = convert(html, pdf, settings)
     if (getNumberOfPages(pdf) > 1) {
-      pdf.delete()
       logger.debug("enable smart shrinking")
+      pdf.delete()
       result = convert(html, pdf, settings + (GlobalSettings.DisableSmartShrinking -> "false"))
-      var zoom = 1d
+      var zoom = 0.95d
       while (getNumberOfPages(pdf) > 1 && zoom > 0.5) {
-        convert(html, pdf, settings + (ObjectSettings.ZoomFactor -> String.valueOf(zoom - 0.1)))
-        zoom -= 0.1
+        logger.debug(s"start zooming at ${zoom - 0.05}")
+        result = convert(html, pdf, settings + (ObjectSettings.ZoomFactor -> String.valueOf(zoom - 0.05)))
+        zoom -= 0.05
       }
     }
     result
@@ -110,7 +111,7 @@ object SPD extends Logging {
       }
     }
     htmltopdf.error(logger.error(_))
-    //htmltopdf.progress(x => logger.info(x.toString))
+    //    htmltopdf.progress(x => logger.info(x.toString))
     val isLandscape = htmltopdf.getSetting(GlobalSettings.Orientation).getOrElse("-") == "Landscape"
     if (isLandscape) {
       val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))

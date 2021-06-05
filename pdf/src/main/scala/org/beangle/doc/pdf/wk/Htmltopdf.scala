@@ -66,7 +66,7 @@ class Htmltopdf {
         case _ => this.settings.put(name, value.toString)
       }
     } else {
-      throw new RuntimeException(s"Cannot recognize global settings$name")
+      throw new RuntimeException(s"Cannot recognize global settings {$name}")
     }
     this
   }
@@ -193,7 +193,7 @@ class Htmltopdf {
     if (pages.isEmpty) {
       false
     } else {
-      set("out", path.getAbsolutePath)
+      set(Out, path.getAbsolutePath)
       withConverter((p, library) => library.convert(p) == 1)
     }
   }
@@ -203,7 +203,7 @@ class Htmltopdf {
    * @return 转换后的输入流
    */
   def saveAs(): InputStream = {
-    settings.remove("out")
+    settings.remove(Out)
     withConverter((converter: Pointer, library: WKLibrary) => {
       val log = Collections.newBuffer[String]
       warning(w => log += ("Warning: " + w))

@@ -40,11 +40,13 @@ object GlobalSettings {
   val ImageQuality = "imageQuality"
   val CookieJar = "load.cookieJar"
 
+  val Out = "out"
+
   def isValid(name: String): Boolean = {
     SettingNames.contains(name)
   }
 
-  private val SettingNames = Set(DisableSmartShrinking, Orientation, ColorMode, Dpi, Collate,
+  private val SettingNames = Set(DisableSmartShrinking, Orientation, PageSize, ColorMode, Dpi, Collate,
     Outline, OutlineDepth, DocumentTitle, UseCompression, MarginTop, MarginRight, MarginBottom, MarginLeft,
-    ImageDpi, ImageQuality,CookieJar)
+    ImageDpi, ImageQuality, CookieJar, Out)
 }
