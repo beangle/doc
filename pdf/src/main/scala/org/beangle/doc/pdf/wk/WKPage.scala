@@ -18,7 +18,7 @@
 package org.beangle.doc.pdf.wk
 
 import org.beangle.commons.collection.Collections
-import org.beangle.doc.core.ErrorPolicies
+import org.beangle.doc.core.ErrorPolicy
 import org.beangle.doc.pdf.wk.ObjectSettings._
 
 object WKPage {
@@ -140,7 +140,7 @@ class WKPage(val data: String) {
   }
 
   /** 对于一个网页加载出错的处理办法 */
-  def handleErrors(errorHandling: ErrorPolicies.Policy): this.type = {
+  def handleErrors(errorHandling: ErrorPolicy): this.type = {
     set(LoadErrorHandling, errorHandling.name)
   }
 

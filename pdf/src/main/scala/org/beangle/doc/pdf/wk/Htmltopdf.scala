@@ -20,8 +20,7 @@ package org.beangle.doc.pdf.wk
 import com.sun.jna.Pointer
 import com.sun.jna.ptr.PointerByReference
 import org.beangle.commons.collection.Collections
-import org.beangle.doc.core.{ConvertException, Orientations, PageSizes, ProgressPhase}
-import org.beangle.doc.pdf.wk.GlobalSettings._
+import org.beangle.doc.core.{ConvertException, Orientation, PageSize, ProgressPhase}
 
 import java.io.{ByteArrayInputStream, File, InputStream}
 import java.util.function.Consumer
@@ -52,12 +51,12 @@ class Htmltopdf {
   def this(initSettings: Map[String, String]) = {
     this()
     initSettings foreach { case (k, v) =>
-      if (isValid(k)) settings.put(k, v)
+      if (GlobalSettings.isValid(k)) settings.put(k, v)
     }
   }
 
   def set(name: String, value: Any): this.type = {
-    if (isValid(name)) {
+    if (GlobalSettings.isValid(name)) {
       value match {
         case None => this.settings.remove(name)
         case null => this.settings.remove(name)
@@ -75,76 +74,76 @@ class Htmltopdf {
 
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
   def disableSmartShrinking(disable: Boolean): this.type = {
-    set(DisableSmartShrinking, disable)
+    set(GlobalSettings.DisableSmartShrinking, disable)
   }
 
   /** 纸张大小(A3,A4,A5..) */
-  def pageSize(pageSize: PageSizes.PageSize): this.type = {
-    set(PageSize, pageSize.name)
+  def pageSize(pageSize: PageSize): this.type = {
+    set(GlobalSettings.PageSize, pageSize.name)
   }
 
   /** 横向纵向(Landscape) */
-  def orientation(orientation: Orientations.Orientation): this.type = {
-    set(Orientation, orientation.name)
+  def orientation(orientation: Orientation): this.type = {
+    set(GlobalSettings.Orientation, orientation.name)
   }
 
   /** 输出文档的颜色模式，Color/Grayscale */
   def colorMode(colorMode: String): this.type = {
-    set(ColorMode, colorMode)
+    set(GlobalSettings.ColorMode, colorMode)
   }
 
   /** 文档的DPI */
   def dpi(dpi: Int): this.type = {
-    set(Dpi, dpi)
+    set(GlobalSettings.Dpi, dpi)
   }
 
   /** 打印多份时，是否连续生成一份之后再生成下一份
    */
   def collate(collate: Boolean): this.type = {
-    set(Collate, collate)
+    set(GlobalSettings.Collate, collate)
   }
 
   /** 是否生成文档大纲 */
   def outline(outline: Boolean): this.type = {
-    set(Outline, outline)
+    set(GlobalSettings.Outline, outline)
   }
 
   /** 文档大纲的最大深度 */
   def outlineDepth(outlineDepth: Int): this.type = {
-    set(OutlineDepth, outlineDepth)
+    set(GlobalSettings.OutlineDepth, outlineDepth)
   }
 
   /** 文档的标题 */
   def documentTitle(title: String): this.type = {
-    set(DocumentTitle, title)
+    set(GlobalSettings.DocumentTitle, title)
   }
 
   /** 是否启用PDF压缩 */
   def compression(compression: Boolean): this.type = {
-    set(UseCompression, compression)
+    set(GlobalSettings.UseCompression, compression)
   }
 
   /** 边距(使用css单位，例如5in,15px),顺序按照 顶、右、底、左 */
   def margin(marginTop: String, marginRight: String, marginBottom: String, marginLeft: String): this.type = {
-    set(MarginTop, marginTop)
-    set(MarginRight, marginRight)
-    set(MarginBottom, marginBottom)
-    set(MarginLeft, marginLeft)
+    set(GlobalSettings.MarginTop, marginTop)
+    set(GlobalSettings.MarginRight, marginRight)
+    set(GlobalSettings.MarginBottom, marginBottom)
+    set(GlobalSettings.MarginLeft, marginLeft)
   }
 
   /** 图片的最大DPI */
   def imageDpi(imageDpi: Int): this.type = {
-    set(ImageDpi, imageDpi)
+    set(GlobalSettings.ImageDpi, imageDpi)
   }
 
   /** 图片的压缩比(1-100) */
   def imageQuality(quality: Int): this.type = {
-    set(ImageQuality, quality)
+    set(GlobalSettings.ImageQuality, quality)
   }
 
   /** 当加载和存储cookie时使用的jar路径 */
   def cookieJar(cookieJar: String): this.type = {
-    set(CookieJar, cookieJar)
+    set(GlobalSettings.CookieJar, cookieJar)
   }
 
   /** 添加转换过程的监听器 */
@@ -191,7 +190,7 @@ class Htmltopdf {
     if (pages.isEmpty) {
       false
     } else {
-      set(Out, path.getAbsolutePath)
+      set(GlobalSettings.Out, path.getAbsolutePath)
       withConverter((p, library) => library.convert(p) == 1)
     }
   }
@@ -201,7 +200,7 @@ class Htmltopdf {
    * @return 转换后的输入流
    */
   def saveAs(): InputStream = {
-    settings.remove(Out)
+    settings.remove(GlobalSettings.Out)
     withConverter((converter: Pointer, library: WKLibrary) => {
       val log = Collections.newBuffer[String]
       warning(w => log += ("Warning: " + w))

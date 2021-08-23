@@ -21,11 +21,11 @@ package org.beangle.doc.core
  * Portrait 为纵向
  * Landscape 为横向
  */
-object Orientations extends Enumeration(1) {
+enum Orientation(val id: Int, val name: String) {
+  case Portrait extends Orientation(1, "Portrait")
+  case Landscape extends Orientation(2, "Landscape")
+}
 
-  class Orientation(val name:String) extends super.Val {
-  }
-
-  val Portrait = new Orientation("Portrait")
-  val Landscape = new Orientation("Landscape")
+object Orientation {
+  def fromId(id: Int): Orientation = fromOrdinal(id - 1)
 }

@@ -17,12 +17,8 @@
 
 package org.beangle.doc.core
 
-object ErrorPolicies extends Enumeration {
-
-  class Policy(val name: String) extends super.Val {
-  }
-
-  val Abort = new Policy("abort")
-  val Skip = new Policy("skip")
-  val Ignore = new Policy("ignore")
+enum ErrorPolicy(val name: String) {
+  case Abort extends ErrorPolicy("abort")
+  case Skip extends ErrorPolicy("skip")
+  case Ignore extends ErrorPolicy("ignore")
 }

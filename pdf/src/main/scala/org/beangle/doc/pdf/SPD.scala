@@ -20,7 +20,7 @@ package org.beangle.doc.pdf
 import com.itextpdf.text.pdf.PdfReader
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.doc.core.{ErrorPolicies, PageSizes}
+import org.beangle.doc.core.{ErrorPolicy, PageSize}
 import org.beangle.doc.pdf.wk.{GlobalSettings, Htmltopdf, ObjectSettings, WKPage}
 
 import java.io.File
@@ -76,7 +76,7 @@ object SPD extends Logging {
       return false
     }
 
-    val htmltopdf = Htmltopdf.create().pageSize(PageSizes.A4)
+    val htmltopdf = Htmltopdf.create().pageSize(PageSize.A4)
       .compression(true)
       .margin("0in", "0in", "0in", "0in") //让应用程序设定边距
 
@@ -88,7 +88,7 @@ object SPD extends Logging {
       .defaultEncoding("utf8")
       .produceForms(true)
       .usePrintMediaType(true)
-      .loadImages(true).handleErrors(ErrorPolicies.Ignore)
+      .loadImages(true).handleErrors(ErrorPolicy.Ignore)
 
     if ("true" == settings.getOrElse(GlobalSettings.DisableSmartShrinking, "true")) {
       htmltopdf.disableSmartShrinking(true)
