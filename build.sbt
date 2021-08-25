@@ -1,6 +1,5 @@
-import Dependencies._
-import BuildSettings._
-import sbt.url
+import org.beangle.parent.Dependencies._
+import org.beangle.parent.Settings._
 
 ThisBuild / organization := "org.beangle.doc"
 ThisBuild / version := "0.0.7-SNAPSHOT"
@@ -23,7 +22,8 @@ ThisBuild / developers := List(
 
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
-ThisBuild / resolvers += Resolver.mavenLocal
+val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % "5.2.5"
+val commonDeps = Seq(logback_classic, logback_core, beangle_commons_core, scalatest)
 
 lazy val root = (project in file("."))
   .settings()
@@ -32,14 +32,14 @@ lazy val root = (project in file("."))
 lazy val docx = (project in file("docx"))
   .settings(
     name := "beangle-doc-docx",
-    commonSettings,
-    libraryDependencies ++= (commonDeps ++ Seq(poiOoxml))
+    common,
+    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml))
   )
 
 lazy val pdf = (project in file("pdf"))
   .settings(
     name := "beangle-doc-pdf",
-    commonSettings,
+    common,
     libraryDependencies ++= (commonDeps ++ Seq(itextpdf,jna,bcprov_jdk15to18,bcpkix_jdk15to18))
   )
 
