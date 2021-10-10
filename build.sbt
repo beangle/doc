@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies._
 import org.beangle.parent.Settings._
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.0.8-SNAPSHOT"
+ThisBuild / version := "0.0.8"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -22,18 +22,25 @@ ThisBuild / developers := List(
 
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
-val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % "5.2.5"
+val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % "5.2.6"
 val commonDeps = Seq(logback_classic, logback_core, beangle_commons_core, scalatest)
 
 lazy val root = (project in file("."))
   .settings()
-  .aggregate(docx,pdf)
+  .aggregate(docx,pdf,excel)
 
 lazy val docx = (project in file("docx"))
   .settings(
     name := "beangle-doc-docx",
     common,
     libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml))
+  )
+lazy val excel = (project in file("excel"))
+  .settings(
+    name := "beangle-doc-excel",
+    common,
+    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
+    libraryDependencies += "org.apache.commons" % "commons-jexl3" % "3.2.1"
   )
 
 lazy val pdf = (project in file("pdf"))
