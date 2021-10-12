@@ -30,9 +30,10 @@ class TransformHelper(templateStream: InputStream) {
   var processFormulas = true
 
   @throws[IOException]
-  def transform(os: OutputStream, context: Context): Unit = {
+  def transform(os: OutputStream, datas: collection.Map[String,Any]): Unit = {
     val transformer = DefaultTransformer.createTransformer(templateStream)
     val areaBuilder = new XlsCommentAreaBuilder(transformer)
+    val context = new Context(datas)
     val xlsAreaList = areaBuilder.build()
     for (xlsArea <- xlsAreaList) {
       xlsArea.applyAt(CellRef(xlsArea.startCellRef.getCellName(false)), context)

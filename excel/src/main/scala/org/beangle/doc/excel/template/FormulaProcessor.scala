@@ -128,7 +128,6 @@ trait FormulaProcessor {
     jointedCellRefMap
   }
 
-
   /** Combines a list of cell references into a range
    * E.g. for cell references A1, A2, A3, A4 it returns A1:A4
    */
@@ -173,6 +172,5 @@ trait FormulaProcessor {
     }
     reply.substring(1)
   }
-
 
 }

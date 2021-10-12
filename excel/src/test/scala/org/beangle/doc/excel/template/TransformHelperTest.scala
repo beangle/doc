@@ -26,13 +26,13 @@ import org.scalatest.matchers.should.Matchers
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.time.MonthDay
+import scala.collection.mutable
 
 class TransformHelperTest extends AnyFunSpec with Matchers {
 
   describe("TransformHelper") {
     it("processTemplate") {
-      val context = new Context()
-      context.putVar("datas", List("1", "2", "3", "a", "b", "c"))
+      val context =  Map("datas" -> List("1", "2", "3", "a", "b", "c"))
       val template = ClassLoaders.getResourceAsStream("sample.xlsx").orNull
       val helper = new TransformHelper(template)
       val file = Files.createTempFile("sample", ".xlsx")
@@ -41,7 +41,6 @@ class TransformHelperTest extends AnyFunSpec with Matchers {
       file.toFile.delete()
     }
     it("generate multisheet") {
-      val context = new Context()
       val derek = Employee("Eerek", 35, 3000, 0.30, MonthDay.parse("--09-01"))
       val elsa = Employee("Elsa", 28, 1500, 0.15, MonthDay.parse("--09-02"))
       val oleg = Employee("Oleg", 32, 2300, 0.25, MonthDay.parse("--09-03"))
@@ -54,8 +53,9 @@ class TransformHelperTest extends AnyFunSpec with Matchers {
       val hr = Department("HR", derek, List(maria, john), "http://company.com/ha")
 
       val departs = List(it, hr)
-      context.putVar("departments", departs)
-      context.putVar("sheetNames", departs.map(_.name))
+      val context= new mutable.HashMap[String,Any]
+      context.put("departments", departs)
+      context.put("sheetNames", departs.map(_.name))
       val template = ClassLoaders.getResourceAsStream("multisheet_markup_template.xls").orNull
       val file = Files.createTempFile("multisheet_markup_template", ".xlsx")
       val os = new FileOutputStream(file.toFile, false)
