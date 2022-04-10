@@ -15,25 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.core
+package org.beangle.doc.core.util
 
-/** 纸张大小
- * 定义常规的纸张大小
- */
-enum PageSize(val name:String)  {
+import com.sun.jna.Library
 
-  /**594 x 841 mm*/
-  case A1 extends PageSize("A1")
-  /** 420 x 594 mm */
-  case A2 extends PageSize("A2")
-  /** 297 x 420 mm */
-  case A3 extends PageSize("A3")
-  /** 210 x 297 mm, 8.26 x 11.69 inches */
-  case A4 extends PageSize("A4")
-  /** 148 x 210 mm */
-  case A5 extends PageSize("A5")
-  /** 105 x 148 mm */
-  case A6 extends PageSize("A6")
-  /** 8.5 x 11 inches, 215.9 x 279.4 mm */
-  case Letter extends PageSize("Letter")
+trait NativeLibrary extends Library {
+
+  def version: String
+
+  def init(): Unit
+
+  def destroy(): Unit
 }

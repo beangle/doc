@@ -1,31 +1,29 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.doc.pdf.wk
-
-
-import java.io.{ByteArrayInputStream, File, InputStream}
-import java.util.function.Consumer
 
 import com.sun.jna.Pointer
 import com.sun.jna.ptr.PointerByReference
 import org.beangle.commons.collection.Collections
-import org.beangle.doc.core.{ConvertException, Orientations, PageSizes, ProgressPhase}
+import org.beangle.doc.core.{ConvertException, Orientation, PageSize, ProgressPhase}
+
+import java.io.{ByteArrayInputStream, File, InputStream}
+import java.util.function.Consumer
 
 object Htmltopdf {
   def create(): Htmltopdf = {
@@ -38,114 +36,114 @@ object Htmltopdf {
 }
 
 /** 转换HTML到PDF工具类
+ *
+ * @see https://github.com/wooio/htmltopdf-java
+ * @see https://wkhtmltopdf.org/libwkhtmltox/pagesettings.html
  */
 class Htmltopdf {
-  val settings: collection.mutable.Map[String, String] = Collections.newMap[String, String]
+  private val settings = Collections.newMap[String, String]
   private val pages = Collections.newBuffer[WKPage]
   private val warningCallbacks = Collections.newBuffer[Consumer[String]]
   private val errorCallbacks = Collections.newBuffer[Consumer[String]]
   private val progressCallbacks = Collections.newBuffer[Consumer[ProgressPhase]]
   private val finishedCallbacks = Collections.newBuffer[Consumer[Boolean]]
 
-  def this(initSettings: Map[String, String]) {
+  def this(initSettings: Map[String, String]) = {
     this()
-    this.settings ++= initSettings
-  }
-
-  /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
-  def disableSmartShrinking(disableSmartShrinking: Boolean): this.type = {
-    set("disable-smart-shrinking", disableSmartShrinking)
-  }
-
-  /** 纸张大小(A3,A4,A5..) */
-  def pageSize(pageSize: PageSizes.PageSize): this.type = {
-    set("size.pageSize", pageSize.name)
+    initSettings foreach { case (k, v) =>
+      if (GlobalSettings.isValid(k)) settings.put(k, v)
+    }
   }
 
   def set(name: String, value: Any): this.type = {
-    value match {
-      case None => this.settings.remove(name)
-      case null => this.settings.remove(name)
-      case _ => this.settings.put(name, value.toString)
+    if (GlobalSettings.isValid(name)) {
+      value match {
+        case None => this.settings.remove(name)
+        case null => this.settings.remove(name)
+        case _ => this.settings.put(name, value.toString)
+      }
+    } else {
+      throw new RuntimeException(s"Cannot recognize global settings {$name}")
     }
     this
   }
 
+  def getSetting(name: String): Option[String] = {
+    settings.get(name)
+  }
+
+  /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
+  def disableSmartShrinking(disable: Boolean): this.type = {
+    set(GlobalSettings.DisableSmartShrinking, disable)
+  }
+
+  /** 纸张大小(A3,A4,A5..) */
+  def pageSize(pageSize: PageSize): this.type = {
+    set(GlobalSettings.PageSize, pageSize.name)
+  }
+
   /** 横向纵向(Landscape) */
-  def orientation(orientation: Orientations.Orientation): this.type = {
-    set("orientation", orientation.name)
+  def orientation(orientation: Orientation): this.type = {
+    set(GlobalSettings.Orientation, orientation.name)
   }
 
   /** 输出文档的颜色模式，Color/Grayscale */
   def colorMode(colorMode: String): this.type = {
-    set("colorMode", colorMode)
+    set(GlobalSettings.ColorMode, colorMode)
   }
 
   /** 文档的DPI */
   def dpi(dpi: Int): this.type = {
-    set("dpi", dpi)
+    set(GlobalSettings.Dpi, dpi)
   }
 
   /** 打印多份时，是否连续生成一份之后再生成下一份
-   * Whether or not to collate copies.
    */
   def collate(collate: Boolean): this.type = {
-    set("collate", collate)
+    set(GlobalSettings.Collate, collate)
   }
 
   /** 是否生成文档大纲 */
   def outline(outline: Boolean): this.type = {
-    set("outline", outline)
+    set(GlobalSettings.Outline, outline)
   }
 
   /** 文档大纲的最大深度 */
   def outlineDepth(outlineDepth: Int): this.type = {
-    set("outlineDepth", outlineDepth)
+    set(GlobalSettings.OutlineDepth, outlineDepth)
   }
 
   /** 文档的标题 */
   def documentTitle(title: String): this.type = {
-    set("documentTitle", title)
+    set(GlobalSettings.DocumentTitle, title)
   }
 
   /** 是否启用PDF压缩 */
   def compression(compression: Boolean): this.type = {
-    set("useCompression", compression)
+    set(GlobalSettings.UseCompression, compression)
   }
 
-  /** 顶部边距(使用css单位，例如5in,15px) */
-  def marginTop(marginTop: String): this.type = {
-    set("margin.top", marginTop)
-  }
-
-  /** 底部边距 */
-  def marginBottom(marginBottom: String): this.type = {
-    set("margin.bottom", marginBottom)
-  }
-
-  /** 左边距 */
-  def marginLeft(marginLeft: String): this.type = {
-    set("margin.left", marginLeft)
-  }
-
-  /** 右边距 */
-  def marginRight(marginRight: String): this.type = {
-    set("margin.right", marginRight)
+  /** 边距(使用css单位，例如5in,15px),顺序按照 顶、右、底、左 */
+  def margin(marginTop: String, marginRight: String, marginBottom: String, marginLeft: String): this.type = {
+    set(GlobalSettings.MarginTop, marginTop)
+    set(GlobalSettings.MarginRight, marginRight)
+    set(GlobalSettings.MarginBottom, marginBottom)
+    set(GlobalSettings.MarginLeft, marginLeft)
   }
 
   /** 图片的最大DPI */
   def imageDpi(imageDpi: Int): this.type = {
-    set("imageDPI", imageDpi)
+    set(GlobalSettings.ImageDpi, imageDpi)
   }
 
   /** 图片的压缩比(1-100) */
   def imageQuality(quality: Int): this.type = {
-    set("imageQuality", quality)
+    set(GlobalSettings.ImageQuality, quality)
   }
 
   /** 当加载和存储cookie时使用的jar路径 */
   def cookieJar(cookieJar: String): this.type = {
-    set("load.cookieJar", cookieJar)
+    set(GlobalSettings.CookieJar, cookieJar)
   }
 
   /** 添加转换过程的监听器 */
@@ -192,8 +190,8 @@ class Htmltopdf {
     if (pages.isEmpty) {
       false
     } else {
-      set("out", path.getAbsolutePath)
-      withConverter(settings, (c, library) => library.wkhtmltopdf_convert(c) == 1)
+      set(GlobalSettings.Out, path.getAbsolutePath)
+      withConverter((p, library) => library.convert(p) == 1)
     }
   }
 
@@ -202,14 +200,14 @@ class Htmltopdf {
    * @return 转换后的输入流
    */
   def saveAs(): InputStream = {
-    settings.remove("out")
-    withConverter(settings, (point: Pointer, library: WKLibrary) => {
+    settings.remove(GlobalSettings.Out)
+    withConverter((converter: Pointer, library: WKLibrary) => {
       val log = Collections.newBuffer[String]
       warning(w => log += ("Warning: " + w))
       error(e => log += ("Error: " + e))
       val out = new PointerByReference()
-      if (library.wkhtmltopdf_convert(point) == 1) {
-        val size = library.wkhtmltopdf_get_output(point, out)
+      if (library.convert(converter) == 1) {
+        val size = library.wkhtmltopdf_get_output(converter, out)
         val pdfBytes = new Array[Byte](size.asInstanceOf[Int])
         out.getValue.read(0, pdfBytes, 0, pdfBytes.length)
         return new ByteArrayInputStream(pdfBytes)
@@ -236,36 +234,33 @@ class Htmltopdf {
 
   /** 执行转换
    *
-   * @param settings 参数设置
    * @param consumer 结果通知函数
    * @tparam T 结果类型
    * @return 结果
    */
-  private def withConverter[T](settings: collection.Map[String, String], consumer: (Pointer, WKLibrary) => T): T = {
-    WKLibrary.withInstance(library => {
-      val globalSettings = library.wkhtmltopdf_create_global_settings()
-      settings.foreach { case (k, v) => library.wkhtmltopdf_set_global_setting(globalSettings, k, v) }
-      val converter = library.wkhtmltopdf_create_converter(globalSettings)
-      library.wkhtmltopdf_set_warning_callback(converter, (_, s) => warningCallbacks.foreach(_.accept(s)))
-      library.wkhtmltopdf_set_error_callback(converter, (_, s) => errorCallbacks.foreach(_.accept(s)))
-      library.wkhtmltopdf_set_progress_changed_callback(converter, (c, phaseProgress) => {
-        val phase = library.wkhtmltopdf_current_phase(c)
-        val totalPhases = library.wkhtmltopdf_phase_count(c)
-        val phaseDesc = library.wkhtmltopdf_phase_description(c, phase)
-        val progress = ProgressPhase(phase, phaseDesc, totalPhases, phaseProgress)
-        progressCallbacks.foreach(_.accept(progress))
+  private def withConverter[T](consumer: (Pointer, WKLibrary) => T): T = {
+    WKLibrary.withInstance { library =>
+      val global = library.createGlobalSettings()
+      settings.foreach { case (k, v) => library.setGlobal(global, k, v) }
+      val converter = library.createConverter(global)
+      library.setWarningCallback(converter, (_, s) => warningCallbacks.foreach(_.accept(s)))
+      library.setErrorCallback(converter, (_, s) => errorCallbacks.foreach(_.accept(s)))
+      library.setProgressChangedCallback(converter, (c, percent) => {
+        progressCallbacks.foreach(_.accept(library.currentPhase(c, percent)))
       })
-      library.wkhtmltopdf_set_finished_callback(converter, (_, i) => finishedCallbacks.foreach(_.accept(i == 1)))
+      library.setFinishedCallback(converter, (_, i) => finishedCallbacks.foreach(_.accept(i == 1)))
+      val objectSettingList = Collections.newBuffer[Pointer]
       try {
         pages foreach { page =>
-          val objectSettings = library.wkhtmltopdf_create_object_settings()
-          page.settings.foreach { case (k, v) => library.wkhtmltopdf_set_object_setting(objectSettings, k, v) }
-          library.wkhtmltopdf_add_object(converter, objectSettings, page.data)
+          val objectSettings = library.createObjectSettings()
+          objectSettingList += objectSettings
+          page.settings.foreach { case (k, v) => library.setObject(objectSettings, k, v) }
+          library.addObject(converter, objectSettings, page.data)
         }
         consumer.apply(converter, library)
       } finally {
-        library.wkhtmltopdf_destroy_converter(converter)
+        library.destroy(global, objectSettingList, converter)
       }
-    })
+    }
   }
 }
