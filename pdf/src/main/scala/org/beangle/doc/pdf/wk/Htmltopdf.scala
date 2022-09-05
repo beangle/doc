@@ -210,7 +210,7 @@ class Htmltopdf {
         val size = library.wkhtmltopdf_get_output(converter, out)
         val pdfBytes = new Array[Byte](size.asInstanceOf[Int])
         out.getValue.read(0, pdfBytes, 0, pdfBytes.length)
-        return new ByteArrayInputStream(pdfBytes)
+        new ByteArrayInputStream(pdfBytes)
       } else {
         throw new ConvertException("Conversion returned with failure. Log:\n"
           + log.mkString("\n"))
