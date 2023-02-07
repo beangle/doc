@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies._
 import org.beangle.parent.Settings._
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.1.3-SNAPSHOT"
+ThisBuild / version := "0.1.3"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,7 +23,7 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_common_ver="5.4.2"
+val beangle_common_ver="5.5.0"
 val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % beangle_common_ver
 val commonDeps = Seq(logback_classic, logback_core, beangle_commons_core, scalatest)
 
