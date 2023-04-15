@@ -18,6 +18,7 @@
 package org.beangle.doc.docx
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument
+import org.beangle.commons.lang.Strings
 
 import java.io.ByteArrayOutputStream
 import java.net.URL
@@ -27,21 +28,14 @@ object DocHelper {
   def toDoc(url: URL, data: collection.Map[String, String]): Array[Byte] = {
     val templateIs = url.openStream()
     val doc = new XWPFDocument(templateIs)
-    import scala.jdk.javaapi.CollectionConverters._
+    import scala.jdk.javaapi.CollectionConverters.*
 
     for (p <- asScala(doc.getParagraphs)) {
       val runs = p.getRuns
       if (runs != null) {
         for (r <- asScala(runs)) {
-          var text = r.getText(0)
-          if (text != null) {
-            data foreach { case (k, v) =>
-              if (text.contains("${" + k + "}")) {
-                text = text.replace("${" + k + "}", v)
-              }
-            }
-            r.setText(text, 0)
-          }
+          val text = r.getText(0)
+          if (text != null && text.contains("${")) r.setText(replace(text, data), 0)
         }
       }
     }
@@ -51,13 +45,8 @@ object DocHelper {
         for (cell <- asScala(row.getTableCells)) {
           for (p <- asScala(cell.getParagraphs)) {
             for (r <- asScala(p.getRuns)) {
-              var text = r.getText(0)
-              if (text != null) {
-                data.find { case (k, v) => text.contains("${" + k + "}") } foreach { e =>
-                  text = text.replace("${" + e._1 + "}", e._2)
-                  r.setText(text, 0)
-                }
-              }
+              val text = r.getText(0)
+              if (text != null && text.contains("${")) r.setText(replace(text, data), 0)
             }
           }
         }
@@ -67,5 +56,17 @@ object DocHelper {
     doc.write(bos)
     templateIs.close()
     bos.toByteArray
+  }
+
+  private[docx] def replace(template: String, data: collection.Map[String, String]): String = {
+    var text = template
+    while (text.contains("${")) {
+      val k = Strings.substringBetween(text, "${", "}").trim()
+      val v = data.getOrElse(k, "")
+      val begin = text.indexOf("${")
+      val end = text.indexOf("}") + 1
+      text = Strings.replace(text, text.substring(begin, end), v)
+    }
+    text
   }
 }
