@@ -18,7 +18,7 @@
 package org.beangle.doc.docx
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.{Chars, Strings}
 
 import java.io.ByteArrayOutputStream
 import java.net.URL
@@ -46,7 +46,19 @@ object DocHelper {
           for (p <- asScala(cell.getParagraphs)) {
             for (r <- asScala(p.getRuns)) {
               val text = r.getText(0)
-              if (text != null && text.contains("${")) r.setText(replace(text, data), 0)
+              if (text != null && text.contains("${")) {
+                var processed = replace(text, data)
+                if (text.startsWith("[#maxlen")) {
+                  val max = Integer.parseInt(Strings.substringBetween(text, "[#maxlen", "]").trim())
+                  processed = processed.substring(processed.indexOf(']') + 1)
+                  val resultLen = Chars.charLength(processed)
+                  if (resultLen > max) {
+                    val scale = java.lang.Double.valueOf(max * 100.0 / resultLen).toInt
+                    r.setTextScale(scale)
+                  }
+                }
+                r.setText(processed, 0)
+              }
             }
           }
         }
