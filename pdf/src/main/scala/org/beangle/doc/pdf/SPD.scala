@@ -106,7 +106,7 @@ object SPD extends Logging {
       } else if (GlobalSettings.isValid(k)) {
         htmltopdf.set(k, v)
       } else {
-        throw new RuntimeException(s"Cannot recoganize setting $k")
+        throw new RuntimeException(s"Cannot recognize setting $k")
       }
     }
     htmltopdf.error(logger.error(_))

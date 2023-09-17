@@ -79,7 +79,7 @@ class WKPage(val data: String) {
     set(EnableJavascript, enable)
   }
 
-  /** 是否启用只能缩减（缺省是) */
+  /** 是否启用智能缩减（缺省是) */
   def enableIntelligentShrinking(enable: Boolean): this.type = {
     set(EnableIntelligentShrinking, enable)
   }
@@ -89,7 +89,7 @@ class WKPage(val data: String) {
     set(MminimumFontSize, size)
   }
 
-  /** 是否设置位打印介质(缺省否) */
+  /** 是否设置为打印介质(缺省否) */
   def usePrintMediaType(use: Boolean): this.type = {
     set(UsePrintMediaType, use)
   }

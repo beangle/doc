@@ -70,7 +70,7 @@ class Htmltopdf {
 
   def getSetting(name: String): Option[String] = {
     settings.get(name)
-  }
+}
 
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
   def disableSmartShrinking(disable: Boolean): this.type = {
