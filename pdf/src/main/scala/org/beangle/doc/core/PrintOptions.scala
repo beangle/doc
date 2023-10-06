@@ -103,5 +103,3 @@ case class Millimeter(v: Int) {
 
   override def toString: String = s"${v}mm"
 }
-
-

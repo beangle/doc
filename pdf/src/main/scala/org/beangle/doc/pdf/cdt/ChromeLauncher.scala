@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.lang.Processes
@@ -14,6 +31,17 @@ import scala.collection.mutable
 object ChromeLauncher {
   def apply(): ChromeLauncher = {
     new ChromeLauncher(new Configuration)
+  }
+
+  def findChrome(): Option[Path] = {
+    Processes.find("CHROME_PATH", Array("/usr/bin/chromium",
+      "/usr/bin/chromium-browser",
+      "/usr/bin/google-chrome",
+      "/snap/bin/chromium",
+      "/Applications/Chromium.app/Contents/MacOS/Chromium",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+      "C:/Program Files/Google/Chrome/Application/chrome.exe"))
   }
 
   class Configuration {
@@ -140,8 +168,6 @@ object ChromeLauncher {
       argList.toSeq
     }
   }
-
-
 }
 
 class ChromeLauncher(config: Configuration) extends Logging {
@@ -150,11 +176,13 @@ class ChromeLauncher(config: Configuration) extends Logging {
   private var userDataDirPath: Path = _
 
   def launch(headless: Boolean): Chrome = {
-    launch(detectChromeBinaryPath(), ChromeLauncher.defaultsArgs(headless))
+    launch(ChromeLauncher.defaultsArgs(headless))
   }
 
   def launch(arguments: Arguments): Chrome = {
-    launch(detectChromeBinaryPath(), arguments)
+    ChromeLauncher.findChrome() match
+      case Some(p) => launch(p, arguments)
+      case None => throw new RuntimeException("Cannot find executive chrome")
   }
 
   def launch(chromeBinary: Path, arguments: Arguments): Chrome = {
@@ -181,17 +209,6 @@ class ChromeLauncher(config: Configuration) extends Logging {
     matcher match
       case None => throw new RuntimeException("cannot find dev tools listening port")
       case Some(m) => m.group(1).toInt
-  }
-
-  private def detectChromeBinaryPath(): Path = {
-    Processes.findProgram("CHROME_PATH", Array("/usr/bin/chromium",
-      "/usr/bin/chromium-browser",
-      "/usr/bin/google-chrome",
-      "/snap/bin/chromium",
-      "/Applications/Chromium.app/Contents/MacOS/Chromium",
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-      "C:/Program Files/Google/Chrome/Application/chrome.exe"))
   }
 
   def close(): Unit = {

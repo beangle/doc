@@ -29,7 +29,7 @@ class NativeLoader(groupId: String, artifactId: String) extends Logging {
   private val ArtifactHome = groupId + "/" + artifactId
   private val RepositoryHome = SystemInfo.user.home + "/.m2/repository"
 
-  def load[T <: NativeLibrary](path: String, version: String, clazz: Class[T]): T = {
+  def find[T <: NativeLibrary](path: String, version: String, clazz: Class[T]): File = {
     val dirs = Dirs.on(RepositoryHome).mkdirs(ArtifactHome)
     val versions = dirs.cd(ArtifactHome).ls()
 
@@ -40,8 +40,8 @@ class NativeLoader(groupId: String, artifactId: String) extends Logging {
         throw new RuntimeException(s"Cannot find $dll")
       }
     } else {
-      if (version == "lastest") {
-        val rs = versions.sorted.reverse find { v => getBundleFile(v).exists() }
+      if (version == "latest") {
+        val rs = versions.sorted.findLast { v => getBundleFile(v).exists() }
         rs match {
           case None =>
             if (Platform.isWindows) {
@@ -68,10 +68,14 @@ class NativeLoader(groupId: String, artifactId: String) extends Logging {
         throw new RuntimeException(s"Cannot find ${getBundleName(version)}")
       }
     }
+    dll
+  }
 
+  def load[T <: NativeLibrary](path: String, version: String, clazz: Class[T]): T = {
+    val dll = find(path, version, clazz)
     val instance = jna.Native.load(dll.getAbsolutePath, clazz)
     instance.init()
-    logger.info(s"Loading libwkhtmltox ${instance.version}")
+    logger.info(s"Loading ${artifactId} ${instance.version}")
     instance
   }
 

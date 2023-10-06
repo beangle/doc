@@ -21,9 +21,23 @@ import com.itextpdf.text.pdf.PdfReader
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{Orientation, PrintOptions}
+import org.beangle.doc.pdf.cdt.ChromePdfMaker
+import org.beangle.doc.pdf.wk.WKPdfMaker
 
 import java.io.File
 import java.net.URI
+
+object SPDConverter {
+  def getInstance(): PdfMaker = {
+    if (ChromePdfMaker.isAvailable()) {
+      new ChromePdfMaker
+    } else if (WKPdfMaker.isAvailable()) {
+      new WKPdfMaker
+    } else {
+      throw new RuntimeException("Cannot find suitable PdfMaker")
+    }
+  }
+}
 
 /** Single Page Document
  * 单页面文档的默认打印
@@ -79,6 +93,4 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
       0
     }
   }
-
-
 }

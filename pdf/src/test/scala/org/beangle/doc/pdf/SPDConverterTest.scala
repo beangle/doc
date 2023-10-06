@@ -17,13 +17,10 @@
 
 package org.beangle.doc.pdf
 
-import org.beangle.doc.core.PrintOptions
+object SPDConverterTest {
 
-import java.io.File
-import java.net.URI
-
-trait PdfMaker {
-  def convert(uri: URI, pdf: File, options: PrintOptions): Boolean
-
-  def close(): Unit
+  def main(args: Array[String]): Unit = {
+    val maker = SPDConverter.getInstance()
+    println(maker.getClass)
+  }
 }

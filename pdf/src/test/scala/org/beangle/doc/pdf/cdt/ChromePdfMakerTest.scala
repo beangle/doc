@@ -1,6 +1,22 @@
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.beangle.doc.pdf.cdt
 
-import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.doc.core.{PageMargin, PrintOptions}
 import org.beangle.doc.pdf.SPDConverter
 
@@ -25,15 +41,11 @@ object ChromePdfMakerTest {
     (0 to 2) foreach { i =>
       exe.submit(new Runnable() {
         override def run(): Unit = {
-          val sw = new Stopwatch(true)
-          converter.convert(URI.create(urls(i)), new File(s"temp${i}.pdf"), options)
-          println(sw)
+          converter.convert(URI.create(urls(i)), new File(s"target/temp${i}.pdf"), options)
         }
       })
     }
     exe.shutdown()
-
-
     converter.close()
   }
 }
