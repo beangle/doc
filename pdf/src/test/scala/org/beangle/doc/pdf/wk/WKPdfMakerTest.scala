@@ -15,23 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.pdf
+package org.beangle.doc.pdf.wk
+
+import org.beangle.doc.core.{Orientation, PrintOptions}
+import org.beangle.doc.pdf.SPDConverter
 
 import java.io.File
+import java.net.URI
 
-import com.itextpdf.text.pdf.PdfWriter
-
-object HtmlToPdfTest {
+object WKPdfMakerTest {
 
   def main(args: Array[String]): Unit = {
     if (args.length < 1) {
-      println("Usage:HtmlToPdfTest file.html")
+      println("Usage:WKPdfMakerTest file.html")
       return
     }
     val url = args(0)
     val out = new File(url).getParent + File.separator + "temp.pdf"
 
-    SPD.convertFile(new File(url), new File(out),Map("orientation"->"Landscape"))
+    val options = PrintOptions.defaultOptions
+    options.orientation = Orientation.Landscape
+    val converter = new SPDConverter(new WKPdfMaker)
+    converter.convert(URI.create(url), new File(out), options)
     //Encryptor.encrypt(new File(out),Some("123"),"456",PdfWriter.ALLOW_PRINTING)
     println("convert " + url + " to " + out)
   }

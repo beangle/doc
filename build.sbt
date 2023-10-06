@@ -1,5 +1,5 @@
-import org.beangle.parent.Dependencies._
-import org.beangle.parent.Settings._
+import org.beangle.parent.Dependencies.*
+import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
 ThisBuild / version := "0.1.8-SNAPSHOT"
@@ -13,23 +13,26 @@ ThisBuild / scmInfo := Some(
 
 ThisBuild / developers := List(
   Developer(
-    id    = "chaostone",
-    name  = "Tihua Duan",
+    id = "chaostone",
+    name = "Tihua Duan",
     email = "duantihua@gmail.com",
-    url   = url("http://github.com/duantihua")
+    url = url("http://github.com/duantihua")
   )
 )
 
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_common_ver="5.6.0"
+val beangle_common_ver = "5.6.1-SNAPSHOT"
 val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % beangle_common_ver
 val commonDeps = Seq(logback_classic, logback_core, beangle_commons_core, scalatest)
+val websocket_api = "javax.websocket" % "javax.websocket-api" % "1.1"
+val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "1.20"
+val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M3"
 
 lazy val root = (project in file("."))
   .settings()
-  .aggregate(docx,pdf)
+  .aggregate(docx, pdf)
 
 lazy val docx = (project in file("docx"))
   .settings(
@@ -42,7 +45,9 @@ lazy val pdf = (project in file("pdf"))
   .settings(
     name := "beangle-doc-pdf",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(itextpdf,jna,bcprov_jdk15to18,bcpkix_jdk15to18))
+    libraryDependencies ++= commonDeps,
+    libraryDependencies ++= Seq(itextpdf, jna, bcprov_jdk15to18, bcpkix_jdk15to18),
+    libraryDependencies ++= Seq(json4s, websocket_api, websocket_tyrus_client)
   )
 
 publish / skip := true

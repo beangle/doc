@@ -20,7 +20,7 @@ package org.beangle.doc.pdf.wk
 import com.sun.jna.Pointer
 import com.sun.jna.ptr.PointerByReference
 import org.beangle.commons.collection.Collections
-import org.beangle.doc.core.{ConvertException, Orientation, PageSize, ProgressPhase}
+import org.beangle.doc.core.*
 
 import java.io.{ByteArrayInputStream, File, InputStream}
 import java.util.function.Consumer
@@ -70,7 +70,7 @@ class Htmltopdf {
 
   def getSetting(name: String): Option[String] = {
     settings.get(name)
-}
+  }
 
   /** 禁止只能缩小策略(WebKit会依据pixel/dpi比例) */
   def disableSmartShrinking(disable: Boolean): this.type = {
@@ -124,11 +124,11 @@ class Htmltopdf {
   }
 
   /** 边距(使用css单位，例如5in,15px),顺序按照 顶、右、底、左 */
-  def margin(marginTop: String, marginRight: String, marginBottom: String, marginLeft: String): this.type = {
-    set(GlobalSettings.MarginTop, marginTop)
-    set(GlobalSettings.MarginRight, marginRight)
-    set(GlobalSettings.MarginBottom, marginBottom)
-    set(GlobalSettings.MarginLeft, marginLeft)
+  def margin(m: PageMargin): this.type = {
+    set(GlobalSettings.MarginTop, m.top.inches())
+    set(GlobalSettings.MarginRight, m.right.inches())
+    set(GlobalSettings.MarginBottom, m.bottom.inches())
+    set(GlobalSettings.MarginLeft, m.left.inches())
   }
 
   /** 图片的最大DPI */

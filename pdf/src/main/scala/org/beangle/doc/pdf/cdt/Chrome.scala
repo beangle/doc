@@ -1,0 +1,127 @@
+package org.beangle.doc.pdf.cdt
+
+import org.beangle.commons.io.IOs
+import org.beangle.commons.lang.Strings
+import org.beangle.commons.logging.Logging
+import org.json4s.*
+import org.json4s.native.JsonMethods.*
+
+import java.io.{IOException, InputStream}
+import java.net.{HttpURLConnection, URL}
+import java.text.MessageFormat
+import java.util.concurrent.atomic.AtomicInteger
+
+object Chrome extends Logging {
+
+  def start(headless: Boolean): Chrome = {
+    val launcher = ChromeLauncher()
+    val chrome = launcher.launch(headless)
+    if (logger.isDebugEnabled) logger.debug(chrome.version())
+    chrome
+  }
+}
+
+class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2) extends Logging {
+
+  private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxIdle)
+
+  private val pageIdGenerator = new AtomicInteger(1)
+
+  private def nextPageIndex(): Int = pageIdGenerator.getAndIncrement()
+
+  collectPages()
+
+  def open(url: String): ChromePage = {
+    val p = findOrCreatePage(url)
+    p.navigate(url)
+    p
+  }
+
+  def close(p: ChromePage): Unit = {
+    if (!freePages.offer(p)) {
+      closePage(p.pageId)
+    }
+  }
+
+  private def collectPages(): Unit = {
+    pages() foreach { p =>
+      p.enable()
+      freePages.add(p)
+    }
+  }
+
+  private def findOrCreatePage(url: String): ChromePage = this.synchronized {
+    if (freePages.isEmpty) {
+      val p = createPage(url)
+      p.enable()
+      p
+    } else {
+      freePages.poll()
+    }
+  }
+
+  private def closePage(id: String): ChromePage = {
+    request(classOf[ChromePage], "GET", String.format("http://%s:%d/%s/%s", host, port, "json/close", id))
+  }
+
+  private def createPage(url: String = ""): ChromePage = {
+    request(classOf[ChromePage], "PUT", String.format("http://%s:%d/%s?%s", host, port, "json/new",
+      if (Strings.isEmpty(url)) "about:blank" else url))
+  }
+
+  private def pages(): Array[ChromePage] = {
+    request(classOf[Array[ChromePage]], "GET", String.format("http://%s:%d/%s", host, port, "json/list"))
+  }
+
+  def version(): String = {
+    request(classOf[String], "GET", String.format("http://%s:%d/%s", host, port, "json/version"))
+  }
+
+  def exit(): Unit = {
+    launcher.close()
+  }
+
+  private def request[T](responseType: Class[T], method: String, path: String): T = {
+    var connection: HttpURLConnection = null
+    var inputStream: InputStream = null
+    try {
+      val uri = new URL(path)
+      connection = uri.openConnection.asInstanceOf[HttpURLConnection]
+      connection.setRequestMethod(method)
+      val responseCode = connection.getResponseCode
+      if (HttpURLConnection.HTTP_OK == responseCode) {
+        if (classOf[Void] == responseType) return null.asInstanceOf[T]
+        inputStream = connection.getInputStream
+
+        val res = IOs.readString(inputStream)
+        val v = parse(res)
+        if (responseType == classOf[ChromePage]) {
+          toPage(v).asInstanceOf[T]
+        } else if (responseType.isArray && responseType.getComponentType == classOf[ChromePage]) {
+          v.children.filter(x => (x \ "type").values.toString == "page").map(x => toPage(x)).toArray.asInstanceOf[T]
+        } else if (responseType == classOf[String]) {
+          res.asInstanceOf[T]
+        } else {
+          null.asInstanceOf[T]
+        }
+      } else {
+        inputStream = connection.getErrorStream
+        val responseBody = IOs.readString(inputStream)
+        val message = MessageFormat.format("Server responded with non-200 code: {0} - {1}. {2}", responseCode, connection.getResponseMessage, responseBody)
+        throw new RuntimeException(message)
+      }
+    } catch {
+      case ex: IOException => throw new RuntimeException("Failed sending HTTP request.", ex)
+    } finally {
+      if (inputStream != null) try inputStream.close()
+      catch
+        case e: IOException =>
+      if (connection != null) connection.disconnect()
+    }
+  }
+
+  private def toPage(v: JValue): ChromePage = {
+    ChromePage(nextPageIndex(), (v \ "id").values.toString, (v \ "webSocketDebuggerUrl").values.toString)
+  }
+}
+

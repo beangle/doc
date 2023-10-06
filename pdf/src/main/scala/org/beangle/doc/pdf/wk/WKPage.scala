@@ -145,7 +145,7 @@ class WKPage(val data: String) {
   }
 
   /** 自定义头的页眉字体 */
-  def headerFon(fontName: String, size: Int): this.type = {
+  def headerFont(fontName: String, size: Int): this.type = {
     set(HeaderFontName, fontName)
     set(HeaderFontSize, size)
   }

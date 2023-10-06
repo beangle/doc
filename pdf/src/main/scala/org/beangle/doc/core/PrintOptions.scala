@@ -17,13 +17,19 @@
 
 package org.beangle.doc.core
 
+object PrintOptions {
+  def defaultOptions: PrintOptions = {
+    new PrintOptions()
+  }
+}
+
 class PrintOptions {
   /** 纸张大小 */
   var pageSize: PageSize = PageSize.A4
   /** 纸张方向 */
   var orientation: Orientation = Orientation.Portrait
   /** 是否打印背景 */
-  var background: Boolean = false
+  var printBackground: Boolean = true
   /** 页边距 */
   var margin: PageMargin = PageMargin.Zero
   /** 缩放到页面宽度 */
@@ -31,9 +37,11 @@ class PrintOptions {
   /** 缩放比 */
   var scale: Double = 1.0
   /** 是否打印页眉页脚 */
-  var footheader: Boolean = _
+  var printHeaderFooter: Boolean = _
   /** 打印拷贝数 */
   var copys: Int = 1
+
+  var shrinkTo1Page: Boolean = false
 }
 
 /** 打印方向
@@ -49,32 +57,51 @@ object Orientation {
   def fromId(id: Int): Orientation = fromOrdinal(id - 1)
 }
 
+import org.beangle.doc.core.Millimeter.given
+
+import scala.math.BigDecimal.RoundingMode
+
 /** 纸张大小
  * 定义常规的纸张大小
  */
-enum PageSize(val name: String) {
-
+enum PageSize(val name: String, val width: Millimeter, val height: Millimeter) {
   /** 594 x 841 mm */
-  case A1 extends PageSize("A1")
+  case A1 extends PageSize("A1", 594, 841)
   /** 420 x 594 mm */
-  case A2 extends PageSize("A2")
+  case A2 extends PageSize("A2", 420, 594)
   /** 297 x 420 mm */
-  case A3 extends PageSize("A3")
+  case A3 extends PageSize("A3", 297, 420)
   /** 210 x 297 mm, 8.26 x 11.69 inches */
-  case A4 extends PageSize("A4")
+  case A4 extends PageSize("A4", 210, 297)
   /** 148 x 210 mm */
-  case A5 extends PageSize("A5")
+  case A5 extends PageSize("A5", 148, 210)
   /** 105 x 148 mm */
-  case A6 extends PageSize("A6")
-  /** 8.5 x 11 inches, 215.9 x 279.4 mm */
-  case Letter extends PageSize("Letter")
+  case A6 extends PageSize("A6", 105, 148)
 }
 
 object PageMargin {
-  val Default = PageMargin(1.0, 1.0, 1.0, 1.0)
+  val Default = PageMargin(10, 10, 10, 10)
   val Zero = PageMargin(0, 0, 0, 0)
 }
 
-case class PageMargin(top: Double, bottom: Double, left: Double, right: Double) {
+case class PageMargin(top: Millimeter, bottom: Millimeter, left: Millimeter, right: Millimeter)
 
+object Millimeter {
+  given Conversion[Int, Millimeter] = Millimeter(_)
 }
+
+case class Millimeter(v: Int) {
+  def mm: String = s"${v}mm"
+
+  def inches: Double = {
+    BigDecimal(v / 25.4d).setScale(3, RoundingMode.HALF_UP).doubleValue
+  }
+
+  def inches(postfix: String = "in"): String = {
+    String.format("%.3f" + postfix, v / 25.4d)
+  }
+
+  override def toString: String = s"${v}mm"
+}
+
+
