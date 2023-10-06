@@ -57,6 +57,7 @@ object Orientation {
   def fromId(id: Int): Orientation = fromOrdinal(id - 1)
 }
 
+import org.beangle.commons.lang.Strings
 import org.beangle.doc.core.Millimeter.given
 
 import scala.math.BigDecimal.RoundingMode
@@ -82,11 +83,37 @@ enum PageSize(val name: String, val width: Millimeter, val height: Millimeter) {
 object PageMargin {
   val Default = PageMargin(10, 10, 10, 10)
   val Zero = PageMargin(0, 0, 0, 0)
+
+  def apply(m: String): PageMargin = {
+    if (m == "0mm" || m == "0") {
+      PageMargin.Zero
+    } else {
+      val ms = Strings.split(m, ' ')
+      if (ms.length == 2) {
+        val tb = Millimeter(ms(0))
+        val lr = Millimeter(ms(1))
+        PageMargin(tb, tb, lr, lr)
+      } else if (ms.length == 4) {
+        PageMargin(Millimeter(ms(0)), Millimeter(ms(1)), Millimeter(ms(2)), Millimeter(ms(3)))
+      } else {
+        PageMargin.Default
+      }
+    }
+  }
 }
 
 case class PageMargin(top: Millimeter, bottom: Millimeter, left: Millimeter, right: Millimeter)
 
 object Millimeter {
+  def apply(m: String): Millimeter = {
+    val s = m.toLowerCase
+    if (s.endsWith("mm")) {
+      new Millimeter(Strings.replace(s, "mm", "").toInt)
+    } else {
+      new Millimeter(s.toInt)
+    }
+  }
+
   given Conversion[Int, Millimeter] = Millimeter(_)
 }
 

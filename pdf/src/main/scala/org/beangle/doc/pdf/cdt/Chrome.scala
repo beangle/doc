@@ -141,4 +141,3 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     ChromePage(nextPageIndex(), (v \ "id").values.toString, (v \ "webSocketDebuggerUrl").values.toString)
   }
 }
-

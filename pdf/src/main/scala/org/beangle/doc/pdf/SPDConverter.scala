@@ -28,11 +28,11 @@ import java.io.File
 import java.net.URI
 
 object SPDConverter {
-  def getInstance(): PdfMaker = {
+  def getInstance(): SPDConverter = {
     if (ChromePdfMaker.isAvailable()) {
-      new ChromePdfMaker
+      new SPDConverter(new ChromePdfMaker)
     } else if (WKPdfMaker.isAvailable()) {
-      new WKPdfMaker
+      new SPDConverter(new WKPdfMaker)
     } else {
       throw new RuntimeException("Cannot find suitable PdfMaker")
     }
@@ -43,6 +43,10 @@ object SPDConverter {
  * 单页面文档的默认打印
  */
 class SPDConverter(pdfMaker: PdfMaker) extends Logging {
+
+  def convert(uri: URI, pdf: File): Boolean = {
+    convert(uri, pdf, PrintOptions.defaultOptions)
+  }
 
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     if (uri.getScheme.equalsIgnoreCase("file")) {
