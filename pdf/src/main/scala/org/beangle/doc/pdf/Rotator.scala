@@ -17,31 +17,26 @@
 
 package org.beangle.doc.pdf
 
-import java.io.{File, FileOutputStream}
+import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader, PdfWriter}
 
-import com.itextpdf.text.pdf.{PdfReader, PdfWriter}
-import com.itextpdf.text.{Document, Image, PageSize}
+import java.io.File
 
-object Rotation {
-  def roate(in: File, out: File,degree:Int): Unit = {
-    val pdfReader = new PdfReader(in.toURI.toURL)
-    val document = new Document()
-    val pdfWriter = PdfWriter.getInstance(document, new FileOutputStream(out))
-    pdfWriter.setStrictImageSequence(false)
-    document.setPageSize(PageSize.A4)
-    document.open()
-    val pageCount = pdfReader.getNumberOfPages
+object Rotator {
+  def rotate(in: File, out: File, degree: Int): Unit = {
+    val originDoc = new PdfDocument(new PdfReader(in))
+    val writer = new PdfWriter(out)
+    val newDoc = new PdfDocument(writer)
+    val pageCount = originDoc.getNumberOfPages
+    originDoc.copyPagesTo(1, pageCount, newDoc)
     var i = 1
     while (i <= pageCount) {
-      document.newPage
-      val page = pdfWriter.getImportedPage(pdfReader, i)
-      val image = Image.getInstance(page)
-      image.setRotationDegrees(degree.toFloat)
-      image.setAbsolutePosition(0.toFloat, 0.toFloat)
-      document.add(image)
+      val page = newDoc.getPage(i)
+      page.setRotation(degree)
       i += 1
     }
-    document.close()
+    originDoc.close()
+    newDoc.close()
+    writer.close()
   }
 
 }

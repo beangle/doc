@@ -17,26 +17,29 @@
 
 package org.beangle.doc.pdf
 
-import java.io.{File, FileOutputStream}
-
-import com.itextpdf.text.DocWriter
-import com.itextpdf.text.pdf.{PdfReader, PdfStamper, PdfWriter}
+import com.itextpdf.io.source.ByteUtils
+import com.itextpdf.kernel.pdf.*
 import org.beangle.commons.io.Files
+
+import java.io.{File, FileOutputStream}
 
 object Encryptor {
 
-  def encrypt(pdf: File, userPasswod: Option[String], ownerPassword: String, permission: Int): Unit = {
-    if (!pdf.exists()||pdf.isDirectory) return
-    val pdfReader = new PdfReader(pdf.toURI.toURL)
-    val pdf2 = File.createTempFile("encrypt", ".pdf")
-    val stamper = new PdfStamper(pdfReader, new FileOutputStream(pdf2))
-    stamper.setEncryption(DocWriter.getISOBytes(userPasswod.orNull),
-      DocWriter.getISOBytes(ownerPassword),
-      permission,
-      PdfWriter.STANDARD_ENCRYPTION_128)
-    stamper.close()
-    pdfReader.close()
-    Files.copy(pdf2, pdf)
-    pdf2.delete()
+  def encrypt(pdf: File, userPassword: Option[String], ownerPassword: String, permission: Int = EncryptionConstants.ALLOW_PRINTING): Unit = {
+    if (!pdf.exists() || pdf.isDirectory) return
+
+    val reader = new PdfReader(pdf)
+    reader.setCloseStream(true)
+    val encrypted = File.createTempFile("encrypt", ".pdf")
+    val properties = new EncryptionProperties
+    properties.setStandardEncryption(ByteUtils.getIsoBytes(userPassword.orNull),
+      ByteUtils.getIsoBytes(ownerPassword), permission, EncryptionConstants.STANDARD_ENCRYPTION_128)
+
+    val os = new FileOutputStream(encrypted)
+    PdfEncryptor.encrypt(reader, os, properties)
+    os.close()
+    reader.close()
+    Files.copy(encrypted, pdf)
+    encrypted.delete()
   }
 }

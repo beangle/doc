@@ -29,7 +29,8 @@ val commonDeps = Seq(logback_classic, logback_core, beangle_commons_core, scalat
 val websocket_api = "javax.websocket" % "javax.websocket-api" % "1.1"
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "1.20"
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M3"
-
+val itext_kernel = "com.itextpdf" % "kernel" % "8.0.2"
+val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.2"
 lazy val root = (project in file("."))
   .settings()
   .aggregate(docx, pdf)
@@ -46,7 +47,7 @@ lazy val pdf = (project in file("pdf"))
     name := "beangle-doc-pdf",
     common,
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(itext, jna),
+    libraryDependencies ++= Seq(itext_kernel, itext_bouncy_castle_adapter, jna),
     libraryDependencies ++= Seq(json4s, websocket_api, websocket_tyrus_client)
   )
 

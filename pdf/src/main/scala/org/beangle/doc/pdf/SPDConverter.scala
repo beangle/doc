@@ -17,7 +17,7 @@
 
 package org.beangle.doc.pdf
 
-import com.itextpdf.text.pdf.PdfReader
+import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{Orientation, PrintOptions}
@@ -79,7 +79,7 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
     }
     if (result && options.orientation == Orientation.Landscape) {
       val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
-      Rotation.roate(portrait, pdf, -90)
+      Rotator.rotate(portrait, pdf, -90)
       pdf.delete()
       portrait.renameTo(pdf)
     }
@@ -89,9 +89,9 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
 
   private def getNumberOfPages(pdf: File): Int = {
     if (pdf.exists()) {
-      val pdfReader = new PdfReader(pdf.toURI.toURL)
-      val pages = pdfReader.getNumberOfPages
-      pdfReader.close()
+      val originDoc = new PdfDocument(new PdfReader(pdf))
+      val pages = originDoc.getNumberOfPages
+      originDoc.close()
       pages
     } else {
       0
