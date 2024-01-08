@@ -24,7 +24,7 @@ import org.json4s.*
 import org.json4s.native.JsonMethods.*
 
 import java.io.{IOException, InputStream}
-import java.net.{HttpURLConnection, URL}
+import java.net.{HttpURLConnection, URI, URL}
 import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -38,6 +38,14 @@ object Chrome extends Logging {
   }
 }
 
+/** Chrome DevTools Client
+ *  It can be used for *instrumenting, inspecting, debuging and profiling Chromium, Chrome and other Blink-based browsers.*
+ *  For more information on DevTools, see https://chromedevtools.github.io/devtools-protocol/.
+ * @param launcher
+ * @param host
+ * @param port
+ * @param maxIdle
+ */
 class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2) extends Logging {
 
   private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxIdle)
@@ -102,7 +110,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     var connection: HttpURLConnection = null
     var inputStream: InputStream = null
     try {
-      val uri = new URL(path)
+      val uri = URI.create(path).toURL
       connection = uri.openConnection.asInstanceOf[HttpURLConnection]
       connection.setRequestMethod(method)
       val responseCode = connection.getResponseCode

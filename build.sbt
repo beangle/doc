@@ -31,6 +31,7 @@ val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-cl
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M3"
 val itext_kernel = "com.itextpdf" % "kernel" % "8.0.2"
 val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.2"
+
 lazy val root = (project in file("."))
   .settings()
   .aggregate(docx, pdf)

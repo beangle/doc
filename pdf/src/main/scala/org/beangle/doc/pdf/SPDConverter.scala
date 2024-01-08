@@ -55,14 +55,14 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
         return false
       }
     }
-    printToOnePage(uri, pdf, options)
+    print(uri, pdf, options)
   }
 
   def close(): Unit = {
     pdfMaker.close()
   }
 
-  private def printToOnePage(uri: URI, pdf: File, options: PrintOptions): Boolean = {
+  private def print(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     var result = pdfMaker.convert(uri, pdf, options)
     if (options.shrinkTo1Page && getNumberOfPages(pdf) > 1) {
       logger.debug("enable smart shrinking")

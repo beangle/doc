@@ -54,6 +54,10 @@ class ChromePdfMaker extends PdfMaker, Logging {
       params.put("displayHeaderFooter", options.printHeaderFooter)
       params.put("preferCSSPageSize", false)
       params.put("transferMode", "ReturnAsBase64")
+
+      options.pageRanges foreach { ranges =>
+        params.put("pageRanges", ranges)
+      }
       val page = chrome.open(uri.toString)
       val data = page.printToPDF(params.toMap)
       chrome.close(page)

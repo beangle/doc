@@ -40,7 +40,9 @@ class PrintOptions {
   var printHeaderFooter: Boolean = _
   /** 打印拷贝数 */
   var copys: Int = 1
-
+  /** 打印范围，例如1-5, 8, 11-13 */
+  var pageRanges: Option[String] = None
+  /** 是否缩小到一页 */
   var shrinkTo1Page: Boolean = false
 }
 

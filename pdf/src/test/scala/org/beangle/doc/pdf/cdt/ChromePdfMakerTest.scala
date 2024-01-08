@@ -35,6 +35,7 @@ object ChromePdfMakerTest {
     options.shrinkTo1Page = false
     options.scale = 0.8d
     options.margin = PageMargin.Default
+    options.pageRanges = Some("1-2")
     val converter = new SPDConverter(new ChromePdfMaker)
 
     val exe = Executors.newFixedThreadPool(3)

@@ -104,7 +104,7 @@ object ChromeLauncher {
     }
 
     def genTempUserDataDir(): String = {
-      val tempDir = Files.createTempDirectory("cdt-user-data-dir").toAbsolutePath().toString()
+      val tempDir = Files.createTempDirectory("cdt-user-data-dir").toAbsolutePath.toString
       userDataDir(tempDir)
       tempDir
     }
@@ -171,7 +171,7 @@ object ChromeLauncher {
 }
 
 class ChromeLauncher(config: Configuration) extends Logging {
-  private var chromeProcess: Process = null
+  private var chromeProcess: Process = _
 
   private var userDataDirPath: Path = _
 
