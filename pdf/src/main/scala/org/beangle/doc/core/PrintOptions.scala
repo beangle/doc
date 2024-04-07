@@ -17,6 +17,9 @@
 
 package org.beangle.doc.core
 
+import org.beangle.commons.lang.Strings
+import scala.math.BigDecimal.RoundingMode
+
 object PrintOptions {
   def defaultOptions: PrintOptions = {
     new PrintOptions()
@@ -59,11 +62,35 @@ object Orientation {
   def fromId(id: Int): Orientation = fromOrdinal(id - 1)
 }
 
-import org.beangle.commons.lang.Strings
+object Millimeter {
+  def apply(m: String): Millimeter = {
+    val s = m.toLowerCase
+    if (s.endsWith("mm")) {
+      new Millimeter(Strings.replace(s, "mm", "").toInt)
+    } else {
+      new Millimeter(s.toInt)
+    }
+  }
+
+  given Conversion[Int, Millimeter] = Millimeter(_)
+}
+
+case class Millimeter(v: Int) {
+  def mm: String = s"${v}mm"
+
+  def inches: Double = {
+    BigDecimal(v / 25.4d).setScale(3, RoundingMode.HALF_UP).doubleValue
+  }
+
+  def inches(postfix: String = "in"): String = {
+    String.format("%.3f" + postfix, v / 25.4d)
+  }
+
+  override def toString: String = s"${v}mm"
+}
+
 import org.beangle.doc.core.Millimeter.given
-
-import scala.math.BigDecimal.RoundingMode
-
+import scala.language.implicitConversions
 /** 纸张大小
  * 定义常规的纸张大小
  */
@@ -105,30 +132,3 @@ object PageMargin {
 }
 
 case class PageMargin(top: Millimeter, bottom: Millimeter, left: Millimeter, right: Millimeter)
-
-object Millimeter {
-  def apply(m: String): Millimeter = {
-    val s = m.toLowerCase
-    if (s.endsWith("mm")) {
-      new Millimeter(Strings.replace(s, "mm", "").toInt)
-    } else {
-      new Millimeter(s.toInt)
-    }
-  }
-
-  given Conversion[Int, Millimeter] = Millimeter(_)
-}
-
-case class Millimeter(v: Int) {
-  def mm: String = s"${v}mm"
-
-  def inches: Double = {
-    BigDecimal(v / 25.4d).setScale(3, RoundingMode.HALF_UP).doubleValue
-  }
-
-  def inches(postfix: String = "in"): String = {
-    String.format("%.3f" + postfix, v / 25.4d)
-  }
-
-  override def toString: String = s"${v}mm"
-}
