@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.3.4-SNAPSHOT"
+ThisBuild / version := "0.3.4"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,8 +23,8 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.15"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.9"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.16"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.10"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_api = "javax.websocket" % "javax.websocket-api" % "1.1"
