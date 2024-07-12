@@ -21,8 +21,7 @@ import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCell, XSSFRichTextString}
 import org.beangle.commons.conversion.string.{BooleanConverter, TemporalConverter}
 import org.beangle.commons.io.DataType
-import org.beangle.commons.lang.{Dates, Numbers, Strings}
-import org.beangle.doc.excel.{CellOps, ExcelStyleRegistry}
+import org.beangle.commons.lang.{Numbers, Strings}
 
 import java.text.NumberFormat
 import java.time.*

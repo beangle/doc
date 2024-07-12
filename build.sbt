@@ -55,7 +55,7 @@ lazy val excel = (project in file("excel"))
   .settings(
     name := "beangle-doc-excel",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
+    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml, scalaxml)),
     libraryDependencies ++= Seq(jexl3, jcl_over_slf4j)
   )
 
