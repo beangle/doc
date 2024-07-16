@@ -18,8 +18,6 @@
 package org.beangle.doc.excel.template
 
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.doc.excel.CellRef.*
-import org.beangle.doc.excel.{CellRef, Workbooks}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

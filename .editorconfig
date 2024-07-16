@@ -10,7 +10,7 @@ tab_width = 2
 charset = utf-8
 
 # space indentation
-[*.{scala,java,js,json,xml,ftl}]
+[*.{scala,java,js,json,html,xml,ftl}]
 indent_style = space
 indent_size = 2
 

@@ -35,7 +35,7 @@ val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.
 
 lazy val root = (project in file("."))
   .settings()
-  .aggregate(dbf, docx, pdf, excel, transfer)
+  .aggregate(dbf, docx, pdf, html, excel, transfer)
 
 lazy val dbf = (project in file("dbf"))
   .settings(
@@ -51,13 +51,20 @@ lazy val docx = (project in file("docx"))
     libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml))
   )
 
+lazy val html = (project in file("html"))
+  .settings(
+    name := "beangle-doc-html",
+    common,
+    libraryDependencies ++= (commonDeps ++ Seq(scalaxml))
+  )
+
 lazy val excel = (project in file("excel"))
   .settings(
     name := "beangle-doc-excel",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml, scalaxml)),
+    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
     libraryDependencies ++= Seq(jexl3, jcl_over_slf4j)
-  )
+  ).dependsOn(html)
 
 lazy val pdf = (project in file("pdf"))
   .settings(

@@ -18,12 +18,12 @@
 package org.beangle.doc.excel.template
 
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.script.ExpressionEvaluator
-import org.beangle.doc.excel.template.directive.{AreaDirective, Directive, EachDirective}
-import org.beangle.doc.excel.{CellRef, Sheets, Workbooks}
+import org.beangle.doc.excel.template.directive.EachDirective
+import org.beangle.doc.excel.{CellRef, Sheets}
 
 import java.io.{IOException, InputStream, OutputStream}
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 class TransformHelper(templateStream: InputStream) {
   var deleteTemplateSheet = true

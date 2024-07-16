@@ -61,7 +61,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
         itemsCollection = List.empty
     }
     var size: Size = null
-    if (groupBy == null || groupBy.length == 0) {
+    if (groupBy == null || groupBy.isEmpty) {
       size = processCollection(context, itemsCollection, cellRef, `var`)
     } else {
       val groupedData = group(itemsCollection, groupBy, groupOrder)

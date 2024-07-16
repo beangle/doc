@@ -15,22 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.excel.html
+package org.beangle.doc.html
 
-import org.beangle.commons.io.Files
+import org.beangle.commons.collection.Collections
 
-import java.io.{File, FileOutputStream}
+import java.util.regex.Pattern
 
-object TableWriterTest {
+object ParseUtil {
 
-  def main(args: Array[String]): Unit = {
-    val file = File.createTempFile("template", ".xlsx")
-    val t = Files.readString(new File("D:\\workspace\\beangle\\doc\\excel\\src\\test\\resources\\table.html"))
-    val os = new FileOutputStream(file)
-    val workbook = TableWriter.writer(t)
-    workbook.write(os)
-    println(file.getAbsolutePath)
-    os.close()
+  def find(searchString: String, regex: String): Seq[String] = {
+    val pattern = Pattern.compile(regex)
+    val matcher = pattern.matcher(searchString)
+    val results = Collections.newBuffer[String]
+    while (matcher.find()) {
+      results.addOne(searchString.substring(matcher.start(), matcher.end))
+    }
+    results.toSeq
   }
-
 }

@@ -1,6 +1,22 @@
-package org.beangle.doc.excel.html.dom
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-import org.apache.poi.ss.usermodel.FontUnderline
+package org.beangle.doc.html.dom
+
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 
@@ -53,27 +69,23 @@ case class Font(properties: Map[String, String]) {
     properties.get("text-decoration").map(x => x.contains("line-through"))
   }
 
-  def underline: Option[FontUnderline] = {
+  def underline: Option[String] = {
     properties.get("text-decoration") match {
       case None => None
       case Some(decoration) =>
-        var style = ""
+        var style: String = null
         if (decoration.contains("underline")) {
           style = Strings.substringAfter(decoration, "underline").trim()
         } else {
           style = properties.getOrElse("text-decoration-style", "").trim()
         }
-        style match
-          case "solid" => Some(FontUnderline.SINGLE)
-          case "double" => Some(FontUnderline.DOUBLE)
-          case _ => None
+        Option(style)
     }
   }
 
   def bold: Option[String] = {
     properties.get("font-weight")
   }
-
 
   override def toString: String = {
     properties.map(x => s"${x._1}:${x._2}").toSeq.sorted.mkString(";")

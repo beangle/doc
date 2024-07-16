@@ -24,12 +24,14 @@ import org.apache.poi.xssf.usermodel.{XSSFCell, XSSFSheet, XSSFWorkbook}
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.excel.*
 import org.beangle.doc.excel.CellOps.*
+import org.beangle.doc.excel.WorkbookOps.given
 import org.beangle.doc.excel.template.DefaultTransformer.*
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCell
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{IOException, InputStream, OutputStream}
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 object DefaultTransformer {
   val logger = LoggerFactory.getLogger(classOf[DefaultTransformer])
@@ -181,14 +183,14 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
 
   override def setFormula(cellRef: CellRef, formulaString: String): Unit = {
     if (cellRef == null || cellRef.sheetName == null) return
-    val cell = Workbooks.getOrCreateCell(workbook, cellRef)
+    val cell = workbook.getOrCreateCell(cellRef)
     cell.setCellFormula(formulaString)
     cell.clearValue()
   }
 
   override def clearCell(cellRef: CellRef): Unit = {
     if (cellRef != null && null != cellRef.sheetName) {
-      Workbooks.cleanCell(workbook, cellRef)
+      workbook.cleanCell(cellRef)
       findAndRemoveExistingCellRegion(cellRef)
     }
   }
@@ -289,6 +291,6 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
   }
 
   override def mergeCells(cellRef: CellRef, rows: Int, cols: Int): Unit = {
-    Workbooks.mergeCells(workbook, cellRef, rows, cols, getCellStyle(cellRef))
+    workbook.mergeCells(cellRef, rows, cols, getCellStyle(cellRef))
   }
 }

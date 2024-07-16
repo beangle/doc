@@ -20,7 +20,7 @@ package org.beangle.doc.excel.template
 import org.beangle.doc.excel.CellRef
 import org.beangle.doc.excel.template.FormulaProcessor.*
 
-import java.util.regex.{Matcher, Pattern}
+import java.util.regex.Pattern
 import scala.collection.mutable
 
 object FormulaProcessor {
@@ -90,7 +90,7 @@ trait FormulaProcessor {
   def processAreaFormulas(transformer: Transformer, area: Area): Unit
 
   /** 找出公式对应的单元所产生的单元集合
-   *  例如某单元格中的公式如：$[D3*0.5+F3]，则需要找出D3和F3所产生新的单元格。
+   * 例如某单元格中的公式如：$[D3*0.5+F3]，则需要找出D3和F3所产生新的单元格。
    */
   protected def buildTargetCellRefMap(transformer: Transformer, area: Area, formulaCellData: CellData): collection.Map[CellRef, collection.Seq[CellRef]] = {
     val targetCellRefMap = new mutable.LinkedHashMap[CellRef, mutable.ArrayBuffer[CellRef]]
@@ -108,7 +108,7 @@ trait FormulaProcessor {
   }
 
   /** 找出公式对应的连续单元所产生的单元集合
-   *  例如某单元格中的公式如：$[SUM(U_(F8,F13))]，则需要找出F8和F13所产生新的单元格。
+   * 例如某单元格中的公式如：$[SUM(U_(F8,F13))]，则需要找出F8和F13所产生新的单元格。
    */
   protected def buildJointedCellRefMap(transformer: Transformer, formulaCellData: CellData): collection.Map[String, collection.Seq[CellRef]] = {
     val jointedCellRefMap = new mutable.LinkedHashMap[String, collection.Seq[CellRef]]
@@ -137,8 +137,10 @@ trait FormulaProcessor {
     if (size == 0) return ""
     else if (size == 1) return targetCellDataList(0).getCellName()
     // falsify if same sheet
-    for (i <- 0 until size - 1) {
+    var i = 0
+    while (i < size - 1) {
       if (!targetCellDataList(i).sheetName.equals(targetCellDataList(i + 1).sheetName)) return buildCellRefsString(targetCellDataList)
+      i += 1
     }
     // falsify if rectangular
     val upperLeft = targetCellDataList(0)

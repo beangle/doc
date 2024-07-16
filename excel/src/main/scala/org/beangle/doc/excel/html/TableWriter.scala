@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.beangle.doc.excel.html
 
 import org.apache.poi.ss.usermodel.{Cell, HorizontalAlignment, Sheet, VerticalAlignment}
@@ -5,9 +22,28 @@ import org.apache.poi.ss.util.{CellRangeAddress, RegionUtil}
 import org.apache.poi.xssf.usermodel.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.excel.html.dom.*
+import org.beangle.doc.html.HtmlParser
+import org.beangle.doc.html.dom.*
 
 object TableWriter {
+  def writer(html: String): XSSFWorkbook = {
+    val workbook = new XSSFWorkbook()
+    val body = HtmlParser.parse(html).body
+
+    val tables = body.children.filter(_.name == "table")
+    tables foreach { table =>
+      val sheetName = table.attributes.get("data-sheet-name").orNull
+      var sheet: XSSFSheet = null
+      if (null == sheetName) {
+        sheet = workbook.createSheet()
+      } else {
+        sheet = workbook.createSheet(sheetName)
+      }
+      TableWriter.write(table.asInstanceOf[Table], sheet, 0)
+    }
+    workbook
+  }
+
   def write(table: Table, sheet: XSSFSheet, startRowIdx: Int): Unit = {
     val writer = new TableWriter(table, sheet)
     writer.write(startRowIdx)
@@ -33,7 +69,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
 
   def write(startRowIdx: Int): Unit = {
     rowIdx = startRowIdx - 1
-    widths = table.buildLayout()
+    widths = table.widths
     table.caption foreach { caption =>
       writeRow(sheet, caption.content.texts, rowIdx, widths.length)
     }
@@ -46,6 +82,9 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       thead.rows foreach { tr =>
         val row = createRow()
         colIndex = -1
+        tr.style.height foreach { height =>
+          row.setHeightInPoints(height.points.floatValue)
+        }
         tr.cells foreach { td =>
           val cell = createCell(row)
           fillin(cell, td)
@@ -59,6 +98,9 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       tbody.rows foreach { tr =>
         val row = createRow()
         colIndex = -1
+        tr.style.height foreach { height =>
+          row.setHeightInPoints(height.points.floatValue)
+        }
         tr.cells foreach { td =>
           val cell = createCell(row)
           fillin(cell, td)
@@ -81,6 +123,16 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       RegionUtil.setBorderLeft(cs.getBorderLeft, region, sheet)
       RegionUtil.setLeftBorderColor(cs.getLeftBorderColor, region, sheet)
     }
+    //view or print
+    table.attributes.get("data-repeating-rows") foreach { repeatRows =>
+      sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatRows))
+    }
+    table.attributes.get("data-zoom") foreach { zoom =>
+      sheet.setZoom(zoom.toInt)
+    }
+    table.attributes.get("data-print-scale") foreach { scale =>
+      sheet.getPrintSetup.setScale(scale.toShort)
+    }
   }
 
   private def createRow(): XSSFRow = {
@@ -89,11 +141,11 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
   }
 
   private def fillin(cell: Cell, td: Table.Cell): Unit = {
-    val computedStyle = td.computedStyle
+    val style = td.style
     td.text foreach { t =>
       val texts = t.texts
       //设置行高
-      computedStyle.height match
+      style.height match
         case None =>
           if (td.rowspan == 1) {
             val lines = Strings.count(texts, '\n') + 1
@@ -108,11 +160,11 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
           cell.getRow.setHeightInPoints(height.points.floatValue)
 
       //填充富文本字符串
-      computedStyle.font.flatMap(_.asciiFont) match
+      style.font.flatMap(_.asciiFont) match
         case None => cell.setCellValue(texts)
         case Some(asciiFont) =>
-          val parts = splitText(t, asciiFont, computedStyle.font.get)
-          if (td.rowspan == 1 && computedStyle.height.isEmpty) { //不跨行，且没有指定高度的情况下
+          val parts = splitText(t, asciiFont, style.font.get)
+          if (td.rowspan == 1 && style.height.isEmpty) { //不跨行，且没有指定高度的情况下
             val newLines = Math.ceil(texts.length * 1.0 / getCharNums(td))
             val newHeight = newLines * sheet.getDefaultRowHeightInPoints
             if (newHeight > cell.getRow.getHeightInPoints) {
@@ -128,7 +180,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
           cell.setCellValue(str)
 
       // 设置样式和文字方向
-      cell.setCellStyle(getOrCreateStyle(td, computedStyle))
+      cell.setCellStyle(getOrCreateStyle(td, style))
     }
   }
 
@@ -189,19 +241,19 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
           s.setVerticalAlignment(valign)
           s.setWrapText(true)
           style.border foreach { b =>
-            b.top foreach { d =>
+            Styles.convertBorder(b.top) foreach { d =>
               s.setBorderTop(d._1)
               s.setTopBorderColor(d._2)
             }
-            b.right foreach { d =>
+            Styles.convertBorder(b.right) foreach { d =>
               s.setBorderRight(d._1)
               s.setRightBorderColor(d._2)
             }
-            b.bottom foreach { d =>
+            Styles.convertBorder(b.bottom) foreach { d =>
               s.setBorderBottom(d._1)
               s.setBottomBorderColor(d._2)
             }
-            b.left foreach { d =>
+            Styles.convertBorder(b.left) foreach { d =>
               s.setBorderLeft(d._1)
               s.setLeftBorderColor(d._2)
             }
@@ -224,7 +276,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
         f.bold foreach { fm => font.setBold(true) }
         f.size foreach { s => font.setFontHeightInPoints(s) }
         f.strikeout foreach { s => font.setStrikeout(s) }
-        f.underline foreach { s => font.setUnderline(s) }
+        Styles.convertUnderLine(f.underline) foreach { s => font.setUnderline(s) }
         fonts.put(f.toString, font)
         font
       case Some(font) => font

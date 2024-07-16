@@ -19,9 +19,11 @@ package org.beangle.doc.excel.template.directive
 
 import org.beangle.commons.io.IOs
 import org.beangle.doc.excel.*
+import org.beangle.doc.excel.WorkbookOps.given
 import org.beangle.doc.excel.template.*
 
 import java.io.InputStream
+import scala.language.implicitConversions
 
 class ImageDirective(src: String, imageTypeStr: String, area: Area) extends AbstractDirective {
   var scaleX: Option[Double] = None
@@ -44,7 +46,7 @@ class ImageDirective(src: String, imageTypeStr: String, area: Area) extends Abst
       case _ => throw new IllegalArgumentException("src value must contain image bytes (byte[])")
     }
     val wb = area.transformer.workbook
-    Workbooks.addImage(wb, imageAnchorArea, imgBytes, ImageType.valueOf(imageTypeStr), scaleX, scaleY)
+    wb.addImage(imageAnchorArea, imgBytes, ImageType.valueOf(imageTypeStr), scaleX, scaleY)
     area.size
   }
 }

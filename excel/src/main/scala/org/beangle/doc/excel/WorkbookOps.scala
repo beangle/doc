@@ -17,14 +17,19 @@
 
 package org.beangle.doc.excel
 
-import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.usermodel.{Cell, CellStyle, ClientAnchor, Workbook}
 import org.apache.poi.ss.util.{CellAddress, CellRangeAddress}
 
-object Workbooks {
+object WorkbookOps {
 
-  def cleanCell(workbook: Workbook, cellRef: CellRef): Unit = {
+  given Conversion[Workbook, WorkbookOps] = (wb: Workbook) => WorkbookOps(wb)
+}
+
+final class WorkbookOps(private val wb: Workbook) extends AnyVal {
+
+  def cleanCell(cellRef: CellRef): Unit = {
     if (cellRef == null || cellRef.sheetName == null) return
-    val sheet = workbook.getSheet(cellRef.sheetName)
+    val sheet = wb.getSheet(cellRef.sheetName)
     if (sheet != null) {
       val row = sheet.getRow(cellRef.row)
       if (row != null) {
@@ -37,17 +42,17 @@ object Workbooks {
           }
         } else {
           cell.setBlank()
-          cell.setCellStyle(workbook.getCellStyleAt(0))
+          cell.setCellStyle(wb.getCellStyleAt(0))
           cell.removeCellComment()
         }
       }
     }
   }
 
-  def getOrCreateCell(workbook: Workbook, cellRef: CellRef): Cell = {
+  def getOrCreateCell(cellRef: CellRef): Cell = {
     require(cellRef != null && cellRef.sheetName != null)
-    var sheet = workbook.getSheet(cellRef.sheetName)
-    if (sheet == null) sheet = workbook.createSheet(cellRef.sheetName)
+    var sheet = wb.getSheet(cellRef.sheetName)
+    if (sheet == null) sheet = wb.createSheet(cellRef.sheetName)
     var row = sheet.getRow(cellRef.row)
     if (row == null) row = sheet.createRow(cellRef.row)
     var cell = row.getCell(cellRef.col)
@@ -55,35 +60,28 @@ object Workbooks {
     cell
   }
 
-  def mergeCells(workbook: Workbook, cellRef: CellRef, rows: Int, cols: Int, cellStyle: CellStyle = null): Unit = {
-    val sheet = workbook.getSheet(cellRef.sheetName)
+  def mergeCells(cellRef: CellRef, rows: Int, cols: Int, cellStyle: CellStyle = null): Unit = {
+    val sheet = wb.getSheet(cellRef.sheetName)
     val region = new CellRangeAddress(cellRef.row, cellRef.row + rows - 1, cellRef.col, cellRef.col + cols - 1)
     sheet.addMergedRegion(region)
-    if null != cellStyle then getOrCreateCell(workbook, cellRef).setCellStyle(cellStyle)
+    if null != cellStyle then getOrCreateCell(cellRef).setCellStyle(cellStyle)
   }
 
-  def addImage(workbook: Workbook, areaRef: AreaRef, imageBytes: Array[Byte], imageType: ImageType, scaleX: Option[Double], scaleY: Option[Double]): Unit = {
-    val pictureIdx = workbook.addPicture(imageBytes, findPoiPictureTypeByImageType(imageType))
-    addImage(workbook, areaRef, pictureIdx, scaleX, scaleY)
+  def addImage(areaRef: AreaRef, imageBytes: Array[Byte], imageType: ImageType, scaleX: Option[Double], scaleY: Option[Double]): Unit = {
+    val pictureIdx = wb.addPicture(imageBytes, findPoiPictureTypeByImageType(imageType))
+    addImage(areaRef, pictureIdx, scaleX, scaleY)
   }
 
-  def addImage(workbook: Workbook, areaRef: AreaRef, imageBytes: Array[Byte], imageType: ImageType): Unit = {
-    val pictureIdx = workbook.addPicture(imageBytes, findPoiPictureTypeByImageType(imageType))
-    addImage(workbook, areaRef, pictureIdx, null, null)
+  def addImage(areaRef: AreaRef, imageBytes: Array[Byte], imageType: ImageType): Unit = {
+    val pictureIdx = wb.addPicture(imageBytes, findPoiPictureTypeByImageType(imageType))
+    addImage(areaRef, pictureIdx, null, null)
   }
 
-  private def findPoiPictureTypeByImageType(imageType: ImageType): Int = {
-    imageType match {
-      case ImageType.PNG => Workbook.PICTURE_TYPE_PNG
-      case ImageType.JPEG => Workbook.PICTURE_TYPE_JPEG
-    }
-  }
-
-  private def addImage(workbook: Workbook, areaRef: AreaRef, imageIdx: Int, scaleX: Option[Double], scaleY: Option[Double]): Unit = {
+  private def addImage(areaRef: AreaRef, imageIdx: Int, scaleX: Option[Double], scaleY: Option[Double]): Unit = {
     val pictureResizeFlag = scaleX.nonEmpty && scaleY.nonEmpty
-    val helper = workbook.getCreationHelper
-    var sheet = workbook.getSheet(areaRef.sheetName)
-    if (sheet == null) sheet = workbook.createSheet(areaRef.sheetName)
+    val helper = wb.getCreationHelper
+    var sheet = wb.getSheet(areaRef.sheetName)
+    if (sheet == null) sheet = wb.createSheet(areaRef.sheetName)
     val drawing = sheet.createDrawingPatriarch
     val anchor = helper.createClientAnchor
     anchor.setCol1(areaRef.firstCellRef.col)
@@ -98,6 +96,13 @@ object Workbooks {
     }
     val picture = drawing.createPicture(anchor, imageIdx)
     if (pictureResizeFlag) picture.resize(scaleX.get, scaleY.get)
+  }
+
+  private def findPoiPictureTypeByImageType(imageType: ImageType): Int = {
+    imageType match {
+      case ImageType.PNG => Workbook.PICTURE_TYPE_PNG
+      case ImageType.JPEG => Workbook.PICTURE_TYPE_JPEG
+    }
   }
 
 }
