@@ -62,7 +62,7 @@ class ExcelWriter(val outputStream: OutputStream) extends Writer {
     try {
       workbook.write(outputStream)
     } finally {}
-    workbook.dispose()
+    workbook.close()
   }
 
   override def write(obj: Any): Unit = {

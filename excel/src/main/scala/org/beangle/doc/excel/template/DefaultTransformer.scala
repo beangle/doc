@@ -222,7 +222,7 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
   // http://poi.apache.org/components/spreadsheet/how-to.html#sxssf
   private def dispose(): Unit = {
     workbook match {
-      case x: SXSSFWorkbook => x.dispose()
+      case x: SXSSFWorkbook => x.close()
       case _ =>
     }
   }
