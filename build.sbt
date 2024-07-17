@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.3.5-SNAPSHOT"
+ThisBuild / version := "0.4.0"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,26 +23,18 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.16"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.10"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.17"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.11"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_api = "javax.websocket" % "javax.websocket-api" % "1.1"
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "1.20"
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M3"
-val itext_kernel = "com.itextpdf" % "kernel" % "8.0.2"
-val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.2"
+val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.4"
 
 lazy val root = (project in file("."))
   .settings()
-  .aggregate(dbf, docx, pdf, html, excel, transfer)
-
-lazy val dbf = (project in file("dbf"))
-  .settings(
-    name := "beangle-doc-dbf",
-    common,
-    libraryDependencies ++= commonDeps
-  )
+  .aggregate(docx, pdf, html, excel, transfer)
 
 lazy val docx = (project in file("docx"))
   .settings(
