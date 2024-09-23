@@ -105,10 +105,10 @@ object Table {
 
   val defaultWidth = Length(1140f, "px")
 
-  class Caption(val content: Text) extends DomNode {
+  class Caption(content: String) extends DomNode {
     def name: String = "caption"
 
-    override def text: Option[Text] = Some(content)
+    add(Text(content))
   }
 
   class THead extends DomNode {
@@ -135,7 +135,6 @@ object Table {
   }
 
   class Cell extends DomNode {
-    var content: Text = _
 
     def colspan: Short = {
       attributes.getOrElse("colspan", "1").toShort
@@ -147,7 +146,6 @@ object Table {
 
     override def name: String = "td"
 
-    override def text: Option[Text] = Option(content)
   }
 
   class TheadCell extends Cell {

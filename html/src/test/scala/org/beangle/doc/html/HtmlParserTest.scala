@@ -29,7 +29,7 @@ class HtmlParserTest extends AnyFunSpec with Matchers {
     it("parse html") {
       val t = IOs.readString(ClassLoaders.getResourceAsStream("table.html").head)
       val doc = HtmlParser.parse(t)
-      val body = doc.children.find(_.name == "body").get
+      val body = doc.childNodes.find(_.name == "body").get
       body.style.font.nonEmpty should be(true)
       val groups = body.find("colgroup")
       groups.size should be(1)

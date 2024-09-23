@@ -73,7 +73,7 @@ object HtmlParser {
         colGroup.add(col)
       }
       (tab \ "caption") foreach { elem =>
-        val caption = new Table.Caption(Text(elem.text, None))
+        val caption = new Table.Caption(elem.text)
         table.caption = Some(caption)
         caption.parent = Some(table)
         parseAttributes(elem, caption)
@@ -86,7 +86,7 @@ object HtmlParser {
         (tr \ "th") foreach { td =>
           val cell = new Table.TheadCell
           row.add(cell)
-          cell.content = Text(readText(td), None)
+          cell.add(Text(readText(td)))
           parseAttributes(td, cell)
         }
       }
@@ -103,7 +103,7 @@ object HtmlParser {
           (tr \ "td") foreach { td =>
             val cell = new Table.Cell
             row.add(cell)
-            cell.content = Text(readText(td), None)
+            cell.add(Text(readText(td)))
             parseAttributes(td, cell)
           }
         }

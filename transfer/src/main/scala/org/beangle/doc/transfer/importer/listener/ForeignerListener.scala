@@ -47,6 +47,9 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
   private val foreignerKeys = new mutable.ListBuffer[String]
   foreignerKeys += "code"
 
+  /** 说明某个外键实体，应该限定的范围 */
+  private val scopes = Collections.newMap[Class[_], Map[String, Any]]
+
   private var multiEntity = false
 
   private var aliases: Set[String] = Set.empty
@@ -82,7 +85,7 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     val iter = keyAttrs.iterator
     while (iter.hasNext) {
       val attri = iter.next()
-      val codeStr = transfer.curData.getOrElse(attri,"").asInstanceOf[String]
+      val codeStr = transfer.curData.getOrElse(attri, "").asInstanceOf[String]
       var foreigner: Object = null
       // 外键的代码不是空的
       if (isNotEmpty(codeStr)) {
@@ -127,11 +130,25 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   private def fetchForeigners(clazz: Class[Entity[_]], codeStr: String): Seq[Entity[_]] = {
     val query = OqlBuilder.from(clazz, "f")
+    scopes.get(clazz) foreach { params =>
+      var i = 1
+      params foreach { case (k, v) =>
+        query.where(s"f.${k} = :p${i}", v)
+        i += 1
+      }
+    }
     query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeStr)
     val foreigners = entityDao.search(query)
     if (foreigners.isEmpty && codeStr.contains(' ')) {
       val codeValue = substringBefore(codeStr, " ")
       val query = OqlBuilder.from(clazz, "f")
+      scopes.get(clazz) foreach { params =>
+        var i = 1
+        params foreach { case (k, v) =>
+          query.where(s"f.${k} = :p${i}", v)
+          i += 1
+        }
+      }
       query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
       entityDao.search(query)
     } else foreigners
@@ -143,5 +160,9 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   def ignore(names: String*): Unit = {
     ignores ++= names
+  }
+
+  def addScope(clazz: Class[_], params: Map[String, Any]): Unit = {
+    scopes.put(clazz, params)
   }
 }

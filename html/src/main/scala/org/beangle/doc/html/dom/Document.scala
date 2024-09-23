@@ -30,7 +30,7 @@ class Document extends DomNode {
       buf.append(styleSheets.styles.map(_.toString(4)).mkString("\n"))
       buf.append("\n    </style>\n  </head>\n")
     }
-    val body = this.children.find(_.name == "body")
+    val body = this.childNodes.find(_.name == "body")
     if (body.nonEmpty) {
       appendXml(body.head, buf, 2)
     }
@@ -39,7 +39,7 @@ class Document extends DomNode {
   }
 
   def body: Body = {
-    children.find(_.name == "body") match
+    childNodes.find(_.name == "body") match
       case None =>
         val body = new Body
         add(body)

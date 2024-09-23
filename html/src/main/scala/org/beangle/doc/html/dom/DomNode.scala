@@ -22,22 +22,20 @@ import org.beangle.commons.lang.Strings
 
 import scala.collection.mutable
 
-abstract class DomNode {
+abstract class DomNode extends Element {
   var parent: Option[DomNode] = None
-  var children: Seq[DomNode] = Seq.empty
+  var children: Seq[Element] = Seq.empty
   var attributes: Map[String, String] = Map.empty
   var style: Style = Style.empty //computed style
   var classNames: Seq[String] = Seq.empty
 
   def name: String
 
-  def text: Option[Text] = None
-
   def addStyle(name: String, value: String): Unit = {
     style = style.add(name, value)
   }
 
-  final def render(sheets: StyleSheets): Unit = {
+  final override def render(sheets: StyleSheets): Unit = {
     renderStyle(sheets)
     children.foreach(_.render(sheets))
   }
@@ -63,31 +61,26 @@ abstract class DomNode {
     buf.toString
   }
 
-  def appendXml(node: DomNode, buf: mutable.StringBuilder, indentation: Int): Unit = {
-    val spaces = " " * indentation
-    buf ++= s"${spaces}<${node.name}"
-    node.attributes foreach { case (k, v) =>
-      buf ++= s""" $k="$v""""
-    }
-    node.text match {
-      case None =>
+  def appendXml(elem: Element, buf: mutable.StringBuilder, indentation: Int): Unit = {
+    elem match
+      case t: Text => buf.append(t.value)
+      case node: DomNode =>
+        val spaces = " " * indentation
+        buf ++= s"${spaces}<${node.name}"
+        node.attributes foreach { case (k, v) =>
+          buf ++= s""" $k="$v""""
+        }
         if (node.children.isEmpty) {
           buf ++= "/>\n"
         } else {
-          buf ++= ">\n"
-          node.children foreach (appendXml(_, buf, indentation + 2))
-          buf ++= s"${spaces}</${node.name}>\n"
+          if (node.children.size == 1 && node.children.head.isInstanceOf[Text]) {
+            buf ++= s"${node.children.head.asInstanceOf[Text].value}</${node.name}>\n"
+          } else {
+            buf ++= ">\n"
+            node.children foreach (appendXml(_, buf, indentation + 2))
+            buf ++= s"${spaces}</${node.name}>\n"
+          }
         }
-      case Some(t) =>
-        if (node.children.isEmpty) {
-          buf ++= s">${t}</${node.name}>\n"
-        } else {
-          buf ++= ">\n"
-          buf ++= t.html
-          node.children foreach (appendXml(_, buf, indentation + 2))
-          buf ++= s"${spaces}</${node.name}>\n"
-        }
-    }
   }
 
   private def getClassNames: Seq[String] = {
@@ -96,9 +89,12 @@ abstract class DomNode {
       case Some(s) => Strings.split(s, ' ').toSeq
   }
 
-  def add(child: DomNode): Unit = {
-    child.parent = Some(this)
+  def add(child: Element): Unit = {
     this.children = this.children :+ child
+    child match {
+      case d: DomNode => d.parent = Some(this)
+      case t: Any =>
+    }
   }
 
   private def matches(searchPattern: String): Boolean = {
@@ -107,15 +103,26 @@ abstract class DomNode {
   }
 
   /** 按照tagName或者className查找
+   *
    * @param pattern
    * @return
    */
   def find(pattern: String): Seq[DomNode] = {
     val rs = Collections.newBuffer[DomNode]
-    rs.addAll(children.filter(x => x.matches(pattern)))
-    children.foreach { c =>
+    val nodes = childNodes
+    rs.addAll(nodes.filter(x => x.matches(pattern)))
+    nodes.foreach { c =>
       rs.addAll(c.find(pattern))
     }
     rs.toSeq
   }
+
+  def childNodes: Seq[DomNode] = children.filter(_.isInstanceOf[DomNode]).map(_.asInstanceOf[DomNode])
+
+  final def text: Option[String] = {
+    val texts = children.filter(_.isInstanceOf[Text]).map(_.asInstanceOf[Text].value)
+    if texts.isEmpty then None
+    else Some(texts.mkString("\n"))
+  }
+
 }
