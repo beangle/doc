@@ -41,6 +41,7 @@ object Chrome extends Logging {
 /** Chrome DevTools Client
  *  It can be used for *instrumenting, inspecting, debuging and profiling Chromium, Chrome and other Blink-based browsers.*
  *  For more information on DevTools, see https://chromedevtools.github.io/devtools-protocol/.
+ *  Some ideas come from Github project chrome-devtools-java-client.
  * @param launcher
  * @param host
  * @param port

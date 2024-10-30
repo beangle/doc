@@ -29,12 +29,13 @@ import org.json4s.native.JsonMethods.*
 import java.io.IOException
 import java.net.URI
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import javax.websocket.*
 
 object WebSocket {
 
   val client: ClientManager = ClientManager.createClient(classOf[GrizzlyClientContainer].getName)
-  client.getProperties.put("org.glassfish.tyrus.incomingBufferSize", 8 * 1024 * 1024)
+  client.getProperties.put("org.glassfish.tyrus.incomingBufferSize", 32 * 1024 * 1024)
 
   def apply(wsUrl: String): WebSocket = {
     val socket = new WebSocket(URI.create(wsUrl))
@@ -57,6 +58,10 @@ class WebSocket(uri: URI) extends Logging {
 
   private val handlers = Collections.newMap[String, () => Unit]
 
+  private val commandId = new AtomicInteger(1)
+
+  private var lastId: Int = 0
+
   def addHandler(event: String, handler: () => Unit): Unit = {
     handlers.put(event, handler)
   }
@@ -69,8 +74,11 @@ class WebSocket(uri: URI) extends Logging {
       }
 
       override def onClose(session: Session, closeReason: CloseReason): Unit = {
-        logger.debug(s"Connection closed ${closeReason.getCloseCode},${uri}")
-        if (null != invokeLatch) invokeLatch.countDown()
+        logger.debug(s"Connection closed ${closeReason.getReasonPhrase},${uri}")
+        if (null != invokeLatch) {
+          invokeLatch.countDown()
+          res = Response(JNothing, closeReason.getReasonPhrase)
+        }
         handlers.values foreach { f => f() }
       }
 
@@ -84,11 +92,15 @@ class WebSocket(uri: URI) extends Logging {
       def onMessage(var1: String): Unit = {
         val v = parse(var1)
         if ((v \ "id") != JNothing) {
-          val errorText = (v \ "errorText").values match
-            case None => ""
-            case t: Any => t.toString
-          res = Response(v \ "result", errorText)
-          if (null != invokeLatch) invokeLatch.countDown()
+          val id = (v \ "id").values.toString.toInt
+          if (id == lastId) {
+            val errorText = (v \ "errorText").values match
+              case None => ""
+              case t: Any => t.toString
+            res = Response(v \ "result", errorText)
+
+            if null != invokeLatch then invokeLatch.countDown()
+          }
         } else if ((v \ "method") != JNothing) {
           handlers.get((v \ "method").values.toString) foreach { f => f() }
         } else {
@@ -98,12 +110,25 @@ class WebSocket(uri: URI) extends Logging {
     })
   }
 
-  def send(message: String): Unit = {
-    session.getBasicRemote.sendText(message)
+  def send(method: String): Unit = {
+    val id = commandId.getAndIncrement
+    val msg = s"""{"id":${id},"method":"${method}"}"""
+    session.getBasicRemote.sendText(msg)
   }
 
-  def invoke(message: String): Response = {
+  def invoke(method: String, params: Map[String, Any]): Response = this.synchronized {
+    val id = commandId.getAndIncrement
+    this.lastId = id
+    val paramStr = params.map { case (k, v) =>
+      val s = v match
+        case sv: String => s"\"$v\""
+        case _ => v.toString
+      s""""$k":$s"""
+    }.mkString(",")
+
+    val message = s"""{"id":${id},"method":"${method}","params":{${paramStr}}}"""
     try {
+      res = null
       session.getBasicRemote.sendText(message)
       invokeLatch = new CountDownLatch(1)
       invokeLatch.await()

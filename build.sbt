@@ -62,6 +62,7 @@ lazy val pdf = (project in file("pdf"))
   .settings(
     name := "beangle-doc-pdf",
     common,
+    Compile / mainClass := Some("org.beangle.doc.pdf.SPDConverter"),
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(itext_kernel, itext_bouncy_castle_adapter, jna),
     libraryDependencies ++= Seq(json4s, websocket_api, websocket_tyrus_client)

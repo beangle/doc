@@ -20,17 +20,13 @@ package org.beangle.doc.pdf.cdt
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.lang.Charsets
 import org.json4s.*
-import org.json4s.native.JsonMethods.*
 
 import java.util.concurrent.CountDownLatch
 
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
-
   private val socket = WebSocket(socketUrl)
   private var frameId: String = _
-
   private var workingLatch: CountDownLatch = _
-
   private var enabled: Boolean = _
 
   def isWorking: Boolean = {
@@ -39,44 +35,34 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
 
   def enable(): Unit = {
     if !enabled then
-      socket.send(s"""{"id":${idx}1,"method":"Page.enable"}""")
+      socket.send("Page.enable")
       enabled = true
   }
 
   def navigate(url: String): String = {
-    if (null != workingLatch) {
-      workingLatch.await()
-      workingLatch = null
-    }
+    if null != workingLatch then workingLatch.await()
+    socket.addHandler("Page.loadEventFired", () => if (null != workingLatch) workingLatch.countDown())
     workingLatch = new CountDownLatch(1)
-    val r = socket.invoke(s"""{"id":${idx}2,"method":"Page.navigate","params":{"url":"$url"}}""")
+    val r = socket.invoke("Page.navigate", Map("url" -> url))
     if r.isOk then frameId = (r.result \ "frameId").values.toString
     else frameId = null
 
-    socket.addHandler("Page.loadEventFired", () => if (null != workingLatch) workingLatch.countDown())
     frameId
   }
 
-  def printToPDF(params: Map[String, Any]): String = {
+  def printToPDF(params: Map[String, Any]): (String, String) = {
     if (null == frameId) {
-      encodeBase64("Cannot open page")
+      ("", "Cannot open page")
     } else {
       if (null != workingLatch) {
         workingLatch.await()
         workingLatch = new CountDownLatch(1)
-        val paramStr = params.map { case (k, v) =>
-          val s = v match
-            case sv: String => s"\"$v\""
-            case _ => v.toString
-          s""""$k":$s"""
-        }.mkString(",")
-        val r = socket.invoke(s"""{"id":${idx}3,"method":"Page.printToPDF","params":{$paramStr}}""")
+        val r = socket.invoke("Page.printToPDF", params)
         workingLatch.countDown()
         workingLatch = null
-        if r.isOk then (r.result \ "data").values.toString
-        else encodeBase64(r.error)
+        if r.isOk then ((r.result \ "data").values.toString, "") else ("", r.error)
       } else {
-        encodeBase64("Page is loading")
+        ("", "Page is loading")
       }
     }
   }

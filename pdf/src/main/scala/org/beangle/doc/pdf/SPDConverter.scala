@@ -18,8 +18,10 @@
 package org.beangle.doc.pdf
 
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
+import org.beangle.commons.io.Files
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
+import org.beangle.commons.net.http.HttpUtils
 import org.beangle.doc.core.{Orientation, PrintOptions}
 import org.beangle.doc.pdf.cdt.ChromePdfMaker
 import org.beangle.doc.pdf.wk.WKPdfMaker
@@ -29,13 +31,20 @@ import java.net.URI
 
 object SPDConverter {
   def getInstance(): SPDConverter = {
-    if (ChromePdfMaker.isAvailable()) {
+    if (ChromePdfMaker.isAvailable) {
       new SPDConverter(new ChromePdfMaker)
-    } else if (WKPdfMaker.isAvailable()) {
+    } else if (WKPdfMaker.isAvailable) {
       new SPDConverter(new WKPdfMaker)
     } else {
       throw new RuntimeException("Cannot find suitable PdfMaker")
     }
+  }
+
+  def main(args: Array[String]): Unit = {
+    val url = args[0]
+    val pdf = if args.length > 1 then new File(args[1]) else File.createTempFile("doc", ".pdf")
+    val success = SPDConverter.getInstance().print(URI.create(url), pdf, PrintOptions.defaultOptions)
+    if (success) println(s"pdf is locate ${pdf.getAbsolutePath}")
   }
 }
 
@@ -64,26 +73,28 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
 
   private def print(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     var result = pdfMaker.convert(uri, pdf, options)
-    if (options.shrinkTo1Page && getNumberOfPages(pdf) > 1) {
-      logger.debug("enable smart shrinking")
-      pdf.delete()
-      options.shrinkToFit = false
-      result = pdfMaker.convert(uri, pdf, options)
-      var scale = 0.95d
-      while (getNumberOfPages(pdf) > 1 && scale > 0.5) {
-        logger.debug(s"start zooming at ${scale - 0.05}")
-        options.scale = scale
+    if (result) {
+      if (options.shrinkTo1Page && getNumberOfPages(pdf) > 1) {
+        logger.debug("enable smart shrinking")
+        pdf.delete()
+        options.shrinkToFit = false
         result = pdfMaker.convert(uri, pdf, options)
-        scale -= 0.05
+        var scale = 0.95d
+        while (getNumberOfPages(pdf) > 1 && scale > 0.5) {
+          logger.debug(s"start zooming at ${scale - 0.05}")
+          options.scale = scale
+          result = pdfMaker.convert(uri, pdf, options)
+          scale -= 0.05
+        }
       }
+      if (result && options.orientation == Orientation.Landscape) {
+        val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
+        Rotator.rotate(pdf, portrait, -90)
+        pdf.delete()
+        portrait.renameTo(pdf)
+      }
+      logger.debug(s"convert pdf ${pdf.getAbsolutePath}")
     }
-    if (result && options.orientation == Orientation.Landscape) {
-      val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
-      Rotator.rotate(pdf, portrait, -90)
-      pdf.delete()
-      portrait.renameTo(pdf)
-    }
-    logger.debug(s"convert pdf ${pdf.getAbsolutePath}")
     result
   }
 

@@ -26,7 +26,7 @@ import java.io.File
 import java.net.URI
 
 object WKPdfMaker {
-  def isAvailable(): Boolean = {
+  def isAvailable: Boolean = {
     try {
       new NativeLoader("wkhtmltopdf", "libwkhtmltox")
         .find("C:\\Program Files\\wkhtmltopdf\\bin", "latest", classOf[WKLibrary])
