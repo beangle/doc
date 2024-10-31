@@ -41,8 +41,12 @@ object SPDConverter {
   }
 
   def main(args: Array[String]): Unit = {
-    val url = args[0]
-    val pdf = if args.length > 1 then new File(args[1]) else File.createTempFile("doc", ".pdf")
+    if(args.length<1){
+      println("Usage:SPDConverter some_url or local file")
+      return
+    }
+    val url = args(0)
+    val pdf = if args.length > 1 then new File(args(1)) else File.createTempFile("doc", ".pdf")
     val success = SPDConverter.getInstance().print(URI.create(url), pdf, PrintOptions.defaultOptions)
     if (success) println(s"pdf is locate ${pdf.getAbsolutePath}")
   }

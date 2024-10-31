@@ -41,7 +41,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
 
   def navigate(url: String): String = {
     if null != workingLatch then workingLatch.await()
-    socket.addHandler("Page.loadEventFired", () => if (null != workingLatch) workingLatch.countDown())
+    socket.addHandler("Page.frameStoppedLoading", () => if (null != workingLatch) workingLatch.countDown())
     workingLatch = new CountDownLatch(1)
     val r = socket.invoke("Page.navigate", Map("url" -> url))
     if r.isOk then frameId = (r.result \ "frameId").values.toString

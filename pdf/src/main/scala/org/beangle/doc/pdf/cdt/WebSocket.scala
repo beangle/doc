@@ -90,6 +90,10 @@ class WebSocket(uri: URI) extends Logging {
 
     session.addMessageHandler(new MessageHandler.Whole[String]() {
       def onMessage(var1: String): Unit = {
+        if (logger.isDebugEnabled) {
+          if var1.length > 5000 then logger.debug("Receive message " + var1.substring(0, 40))
+          else logger.debug("Receive message " + var1)
+        }
         val v = parse(var1)
         if ((v \ "id") != JNothing) {
           val id = (v \ "id").values.toString.toInt
@@ -113,6 +117,7 @@ class WebSocket(uri: URI) extends Logging {
   def send(method: String): Unit = {
     val id = commandId.getAndIncrement
     val msg = s"""{"id":${id},"method":"${method}"}"""
+    logger.debug("send message:" + msg)
     session.getBasicRemote.sendText(msg)
   }
 
@@ -127,6 +132,7 @@ class WebSocket(uri: URI) extends Logging {
     }.mkString(",")
 
     val message = s"""{"id":${id},"method":"${method}","params":{${paramStr}}}"""
+    logger.debug("send message:" + message)
     try {
       res = null
       session.getBasicRemote.sendText(message)
