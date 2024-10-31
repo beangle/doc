@@ -30,7 +30,7 @@ import java.io.IOException
 import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import javax.websocket.*
+import jakarta.websocket.*
 
 object WebSocket {
 

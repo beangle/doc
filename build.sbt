@@ -27,9 +27,8 @@ val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.19"
 val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.15"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
-val websocket_api = "javax.websocket" % "javax.websocket-api" % "1.1"
-val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "1.20"
-val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M3"
+val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
+val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M7"
 val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.4"
 
 lazy val root = (project in file("."))
@@ -65,7 +64,7 @@ lazy val pdf = (project in file("pdf"))
     Compile / mainClass := Some("org.beangle.doc.pdf.SPDConverter"),
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(itext_kernel, itext_bouncy_castle_adapter, jna),
-    libraryDependencies ++= Seq(json4s, websocket_api, websocket_tyrus_client)
+    libraryDependencies ++= Seq(json4s, websocket_tyrus_client)
   )
 
 lazy val transfer = (project in file("transfer"))
