@@ -48,7 +48,9 @@ class RowData(val row: Row) extends Iterable[CellData] {
 
   def getNumberOfCells: Int = cellDatas.size
 
-  def getCellData(col: Int): Option[CellData] = if (col < cellDatas.size) Some(cellDatas(col)) else None
+  def getCellData(col: Int): Option[CellData] = {
+    if (col < cellDatas.size) Option(cellDatas(col)) else None
+  }
 
   protected def addCellData(cellData: CellData): Unit = {
     cellDatas.addOne(cellData)

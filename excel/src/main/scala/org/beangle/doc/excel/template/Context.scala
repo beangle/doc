@@ -17,9 +17,7 @@
 
 package org.beangle.doc.excel.template
 
-import org.apache.commons.jexl3.introspection.JexlPermissions
-import org.apache.commons.jexl3.scripting.JexlScriptEngine
-import org.beangle.commons.script.JSR223ExpressionEvaluator
+import org.beangle.commons.script.Jexl3
 
 import scala.collection.mutable
 
@@ -29,10 +27,7 @@ import scala.collection.mutable
 class Context {
   protected var varMap = new mutable.HashMap[String, Any]
 
-  var evaluator = {
-    JexlScriptEngine.setPermissions(JexlPermissions.UNRESTRICTED)
-    JSR223ExpressionEvaluator("jexl3")
-  }
+  var evaluator = Jexl3.newEvaluator()
 
   /**
    * Evaluates if the passed condition is true
