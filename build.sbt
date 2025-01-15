@@ -32,7 +32,7 @@ val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M8"
 val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.0.0"
 
 lazy val root = (project in file("."))
-  .settings()
+  .settings(common)
   .aggregate(docx, pdf, html, excel, transfer)
 
 lazy val docx = (project in file("docx"))
