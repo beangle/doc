@@ -23,13 +23,13 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.22"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.17"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.25"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.19"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M8"
-val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "8.0.5"
+val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.0.0"
 
 lazy val root = (project in file("."))
   .settings()
