@@ -19,7 +19,7 @@ package org.beangle.doc.html
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.doc.html.dom.Table
+import org.beangle.doc.html.Table
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -28,9 +28,9 @@ class HtmlParserTest extends AnyFunSpec with Matchers {
   describe("HtmlParser") {
     it("parse html") {
       val t = IOs.readString(ClassLoaders.getResourceAsStream("table.html").head)
-      val doc = HtmlParser.parse(t)
+      val doc = TableParser.parse(t)
       val body = doc.childNodes.find(_.name == "body").get
-      body.style.font.nonEmpty should be(true)
+      body.computedStyle.font.nonEmpty should be(true)
       val groups = body.find("colgroup")
       groups.size should be(1)
       val group = groups.head.asInstanceOf[Table.ColGroup]
@@ -44,9 +44,9 @@ class HtmlParserTest extends AnyFunSpec with Matchers {
       modules.size should be(1)
       val cell = modules.head.asInstanceOf[Table.Cell]
       cell.colspan should be(13)
-      cell.style.has("height", "31.85pt") should be(true)
+      cell.computedStyle.has("height", "31.85pt") should be(true)
 
-      //println(doc.toHtml)
+      //println(doc.outerHtml)
     }
   }
 }

@@ -22,13 +22,14 @@ import org.apache.poi.ss.util.{CellRangeAddress, RegionUtil}
 import org.apache.poi.xssf.usermodel.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.html.HtmlParser
-import org.beangle.doc.html.dom.*
+import org.beangle.doc.html.*
 
+/** 将HTML中的表格，转换到Excel中
+ */
 object TableWriter {
   def writer(html: String): XSSFWorkbook = {
     val workbook = new XSSFWorkbook()
-    val body = HtmlParser.parse(html).body
+    val body = TableParser.parse(html).body
 
     val tables = body.childNodes.filter(_.name == "table")
     tables foreach { table =>
@@ -71,7 +72,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
     rowIdx = startRowIdx - 1
     widths = table.widths
     table.caption foreach { caption =>
-      writeRow(sheet, caption.text.get, rowIdx, widths.length)
+      writeRow(sheet, caption.text, rowIdx, widths.length)
     }
     widths.indices foreach { idx =>
       val width = widths(idx)
@@ -82,7 +83,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       thead.rows foreach { tr =>
         val row = createRow()
         colIndex = -1
-        tr.style.height foreach { height =>
+        tr.computedStyle.height foreach { height =>
           row.setHeightInPoints(height.points.floatValue)
         }
         tr.cells foreach { td =>
@@ -98,7 +99,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       tbody.rows foreach { tr =>
         val row = createRow()
         colIndex = -1
-        tr.style.height foreach { height =>
+        tr.computedStyle.height foreach { height =>
           row.setHeightInPoints(height.points.floatValue)
         }
         tr.cells foreach { td =>
@@ -141,46 +142,45 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
   }
 
   private def fillin(cell: Cell, td: Table.Cell): Unit = {
-    val style = td.style
-    td.text foreach { texts =>
-      //设置行高
-      style.height match
-        case None =>
-          if (td.rowspan == 1) {
-            val lines = Strings.count(texts, '\n') + 1
-            if (lines > 1) {
-              val newHeight = lines * sheet.getDefaultRowHeightInPoints
-              if (newHeight > cell.getRow.getHeightInPoints) {
-                cell.getRow.setHeightInPoints(newHeight)
-              }
-            }
-          }
-        case Some(height) =>
-          cell.getRow.setHeightInPoints(height.points.floatValue)
-
-      //填充富文本字符串
-      style.font.flatMap(_.asciiFont) match
-        case None => cell.setCellValue(texts)
-        case Some(asciiFont) =>
-          val parts = splitText(texts, asciiFont, style.font.get)
-          if (td.rowspan == 1 && style.height.isEmpty) { //不跨行，且没有指定高度的情况下
-            val newLines = Math.ceil(texts.length * 1.0 / getCharNums(td))
-            val newHeight = newLines * sheet.getDefaultRowHeightInPoints
+    val style = td.computedStyle
+    val texts = td.text
+    //设置行高
+    style.height match
+      case None =>
+        if (td.rowspan == 1) {
+          val lines = Strings.count(texts, '\n') + 1
+          if (lines > 1) {
+            val newHeight = lines * sheet.getDefaultRowHeightInPoints
             if (newHeight > cell.getRow.getHeightInPoints) {
-              cell.getRow.setHeightInPoints(newHeight.floatValue)
+              cell.getRow.setHeightInPoints(newHeight)
             }
           }
-          val str = new XSSFRichTextString(parts.map(_.value).mkString)
-          var pos = 0
-          parts foreach { part =>
-            part.font foreach { f => str.applyFont(pos, pos + part.value.length, getOrCreateFont(f)) }
-            pos += part.value.length
-          }
-          cell.setCellValue(str)
+        }
+      case Some(height) =>
+        cell.getRow.setHeightInPoints(height.points.floatValue)
 
-      // 设置样式和文字方向
-      cell.setCellStyle(getOrCreateStyle(td, style))
-    }
+    //填充富文本字符串
+    style.font.flatMap(_.asciiFont) match
+      case None => cell.setCellValue(texts)
+      case Some(asciiFont) =>
+        val parts = splitText(texts, asciiFont, style.font.get)
+        if (td.rowspan == 1 && style.height.isEmpty) { //不跨行，且没有指定高度的情况下
+          val newLines = Math.ceil(texts.length * 1.0 / getCharNums(td))
+          val newHeight = newLines * sheet.getDefaultRowHeightInPoints
+          if (newHeight > cell.getRow.getHeightInPoints) {
+            cell.getRow.setHeightInPoints(newHeight.floatValue)
+          }
+        }
+        val str = new XSSFRichTextString(parts.map(_.value).mkString)
+        var pos = 0
+        parts foreach { part =>
+          part.font foreach { f => str.applyFont(pos, pos + part.value.length, getOrCreateFont(f)) }
+          pos += part.value.length
+        }
+        cell.setCellValue(str)
+
+    // 设置样式和文字方向
+    cell.setCellStyle(getOrCreateStyle(td, style))
   }
 
   private def getCharNums(td: Table.Cell): Int = {
@@ -194,6 +194,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
   }
 
   /** 拆分成西文和汉字不同的字体
+   *
    * @param text
    * @param asciiFont
    * @param defaultFont

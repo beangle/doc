@@ -19,10 +19,8 @@ package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.html.dom.ClassStyle
 
-object ClassStyleParser {
-
+object StyleSheets {
   def parse(contents: String): Seq[ClassStyle] = {
     val parts = Strings.split(contents.trim, "}")
     val styles = Collections.newBuffer[ClassStyle]
@@ -40,6 +38,13 @@ object ClassStyleParser {
       }
     }
     styles.toSeq
+  }
+}
+
+class StyleSheets(var styles: Seq[ClassStyle]) {
+
+  def matches(node: DomNode): Seq[ClassStyle] = {
+    styles.filter(_.matches(node))
   }
 
 }

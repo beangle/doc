@@ -19,7 +19,7 @@ package org.beangle.doc.excel.html
 
 import org.apache.poi.ss.usermodel.{BorderStyle, FontUnderline}
 import org.apache.poi.xssf.usermodel.XSSFColor
-import org.beangle.doc.html.dom.BorderData
+import org.beangle.doc.html.BorderData
 
 object Styles {
 

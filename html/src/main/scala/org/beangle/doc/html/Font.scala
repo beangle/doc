@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings

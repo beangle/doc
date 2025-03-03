@@ -17,19 +17,7 @@
 
 package org.beangle.doc.html
 
-import org.beangle.commons.collection.Collections
+trait Element {
 
-import java.util.regex.Pattern
-
-object ParseUtil {
-
-  def find(searchString: String, regex: String): Seq[String] = {
-    val pattern = Pattern.compile(regex)
-    val matcher = pattern.matcher(searchString)
-    val results = Collections.newBuffer[String]
-    while (matcher.find()) {
-      results.addOne(searchString.substring(matcher.start(), matcher.end))
-    }
-    results.toSeq
-  }
+  def render(sheets: StyleSheets): Unit
 }

@@ -15,16 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.apache.poi.xwpf.usermodel;
 
-class UL extends DomNode {
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPrGeneral;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
 
-  def name: String = "ul"
+public class DocBridge {
+  public static CTPPrGeneral getPpr(XWPFDefaultParagraphStyle s) {
+    return s.getPPr();
+  }
 
-}
-
-class Li extends DomNode {
-
-  def name: String = "li"
-
+  public static CTRPr getRpr(XWPFDefaultRunStyle s) {
+    return s.getRPr();
+  }
 }

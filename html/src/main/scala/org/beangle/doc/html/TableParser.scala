@@ -19,11 +19,13 @@ package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.html.dom.*
 
+import java.util.regex.Pattern
 import scala.xml.Node
 
-object HtmlParser {
+/** HTML网页table解析
+ */
+object TableParser {
 
   private def parseAttributes(elem: Node, node: DomNode): Unit = {
     val props = Collections.newMap[String, String]
@@ -34,21 +36,31 @@ object HtmlParser {
     node.attributes = props.toMap
   }
 
+  private def find(searchString: String, regex: String): Seq[String] = {
+    val pattern = Pattern.compile(regex)
+    val matcher = pattern.matcher(searchString)
+    val results = Collections.newBuffer[String]
+    while (matcher.find()) {
+      results.addOne(searchString.substring(matcher.start(), matcher.end))
+    }
+    results.toSeq
+  }
+
   def parse(html: String): Document = {
     var t = html
-    val sheets = ParseUtil.find(t, "(?ims)<style>(.*)</style>")
+    val sheets = find(t, "(?ims)<style>(.*)</style>")
     val classStyles = Collections.newBuffer[ClassStyle]
     sheets.foreach { s =>
       val ss = Strings.substringBetween(s, "<style>", "</style>")
       t = Strings.replace(t, s, "")
-      classStyles.addAll(ClassStyleParser.parse(ss))
+      classStyles.addAll(StyleSheets.parse(ss))
     }
 
-    val cols = ParseUtil.find(t, "(?i)<col (.*?)[^/]>")
+    val cols = find(t, "(?i)<col (.*?)[^/]>")
     cols foreach { col =>
       t = Strings.replace(t, col, col.substring(0, col.length - 1) + "/>")
     }
-    var bodyStr = ParseUtil.find(t, "(?ims)<body(.*)</body>").head
+    var bodyStr = find(t, "(?ims)<body(.*)</body>").head
     bodyStr = Strings.replace(bodyStr, "<br>", "<br/>")
     bodyStr = Strings.replace(bodyStr, "&nbsp;", "&amp;nbsp;")
     val contents = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + bodyStr
@@ -56,21 +68,21 @@ object HtmlParser {
     val xml = scala.xml.XML.loadString(contents)
     val document = new Document
     document.styleSheets = new StyleSheets(classStyles.toSeq)
-    val body = new Body
-    document.add(body)
+    val body = new Dom.Body
+    document.append(body)
     parseAttributes(xml, body)
 
     (xml \ "table") foreach { tab =>
       val table = new Table
       val colGroup = new Table.ColGroup
       table.colGroup = Some(colGroup)
-      body.add(table)
+      body.append(table)
 
       parseAttributes(tab, table)
       (tab \ "colgroup" \ "col") foreach { elem =>
         val col = new Table.Col
         parseAttributes(elem, col)
-        colGroup.add(col)
+        colGroup.append(col)
       }
       (tab \ "caption") foreach { elem =>
         val caption = new Table.Caption(elem.text)
@@ -81,12 +93,12 @@ object HtmlParser {
       val head = new Table.THead
       (tab \ "thead" \ "tr") foreach { tr =>
         val row = new Table.Row
-        head.add(row)
+        head.append(row)
         parseAttributes(tr, row)
         (tr \ "th") foreach { td =>
           val cell = new Table.TheadCell
-          row.add(cell)
-          cell.add(Text(readText(td)))
+          row.append(cell)
+          cell.append(Dom.Text(readText(td)))
           parseAttributes(td, cell)
         }
       }
@@ -98,12 +110,12 @@ object HtmlParser {
         val body = new Table.TBody
         (tbody \ "tr") foreach { tr =>
           val row = new Table.Row
-          body.add(row)
+          body.append(row)
           parseAttributes(tr, row)
           (tr \ "td") foreach { td =>
             val cell = new Table.Cell
-            row.add(cell)
-            cell.add(Text(readText(td)))
+            row.append(cell)
+            cell.append(Dom.Text(readText(td)))
             parseAttributes(td, cell)
           }
         }

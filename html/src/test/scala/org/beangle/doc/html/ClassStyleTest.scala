@@ -17,7 +17,7 @@
 
 package org.beangle.doc.html
 
-import org.beangle.doc.html.dom.ClassStyle
+import org.beangle.doc.html.ClassStyle
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
-import org.beangle.doc.html.dom.Table.*
+import org.beangle.doc.html.Table.*
 
 import scala.collection.mutable
 
@@ -45,7 +45,7 @@ class Table extends DomNode {
     else
       val columns = headRows.head.cells.map(_.colspan).sum
       widths = Array.ofDim[Length](columns)
-      val wholeWidth = style.width.getOrElse(Table.defaultWidth)
+      val wholeWidth = computedStyle.width.getOrElse(Table.defaultWidth)
 
       colGroup foreach { group =>
         var i = 0
@@ -68,7 +68,7 @@ class Table extends DomNode {
       val cells = headRows.head.cells
       var i = 0
       cells foreach { col =>
-        col.style.width.foreach { w =>
+        col.computedStyle.width.foreach { w =>
           (i until i + col.colspan) foreach { ci =>
             if (widths(ci) == null) {
               var unit = w.unit
@@ -85,8 +85,6 @@ class Table extends DomNode {
       }
   }
 
-  def name: String = "table"
-
   override def renderStyle(sheets: StyleSheets): Unit = {
     val cs = Collections.newBuffer[DomNode]
 
@@ -99,6 +97,20 @@ class Table extends DomNode {
     super.renderStyle(sheets)
   }
 
+  def newBody(): TBody = {
+    val b = new TBody
+    append(b)
+    tbodies += b
+    b
+  }
+
+  def newColGroup(): ColGroup = {
+    val cg = new ColGroup
+    this.colGroup = Some(cg)
+    prepend(cg)
+    cg
+  }
+
 }
 
 object Table {
@@ -106,32 +118,38 @@ object Table {
   val defaultWidth = Length(1140f, "px")
 
   class Caption(content: String) extends DomNode {
-    def name: String = "caption"
-
-    add(Text(content))
+    append(Dom.Text(content))
   }
 
   class THead extends DomNode {
-    def name: String = "thead"
-
     def rows: Seq[Row] = children.asInstanceOf[Seq[Row]]
 
     override def renderStyle(sheets: StyleSheets): Unit = {
       super.renderStyle(sheets)
-      if !this.style.has("font-weight") then this.addStyle("font-weight", "bold")
+      if !this.computedStyle.has("font-weight") then this.addStyle("font-weight", "bold")
     }
   }
 
   class TBody extends DomNode {
-    def name: String = "tbody"
-
     def rows: Seq[Row] = children.asInstanceOf[Seq[Row]]
+
+    def newRow(): Row = {
+      val r = new Row()
+      append(r)
+      r
+    }
   }
 
   class Row extends DomNode {
-    def name: String = "tr"
+    override def name: String = "tr"
 
     def cells: Seq[Cell] = children.asInstanceOf[Seq[Cell]]
+
+    def newCell(): Cell = {
+      val c = new Cell()
+      append(c)
+      c
+    }
   }
 
   class Cell extends DomNode {
@@ -157,6 +175,11 @@ object Table {
 
     def cols: Seq[Col] = children.asInstanceOf[Seq[Col]]
 
+    def newCol(): Col = {
+      val c = new Col()
+      append(c)
+      c
+    }
   }
 
   class Col extends DomNode {
@@ -168,6 +191,6 @@ object Table {
       attributes.get("width")
     }
 
-    override def name: String = "col"
+    override def nonVoid: Boolean = true
   }
 }

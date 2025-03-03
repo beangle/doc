@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
@@ -81,7 +81,8 @@ class Style(val properties: Map[String, String]) {
   }
 
   override def toString: String = {
-    properties.map(x => s"${x._1}:${x._2}").toSeq.sorted.mkString(";")
+    if (properties.isEmpty) ""
+    else properties.map(x => s"${x._1}:${x._2}").toSeq.sorted.mkString(";") + ";"
   }
 
   def font: Option[Font] = {

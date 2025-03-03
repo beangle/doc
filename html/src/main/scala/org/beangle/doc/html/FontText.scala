@@ -15,13 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
 
-class Span extends DomNode {
-  def name: String = "span"
+import org.beangle.commons.lang.Strings
 
-  def this(text: String, font: Option[Font]) = {
-    this()
-    add(Text(text))
+case class FontText(value: String, font: Option[Font]) {
+  def texts: String = {
+    var t = value
+    t = Strings.replace(t, "<br/>", "\n")
+    t
   }
 }

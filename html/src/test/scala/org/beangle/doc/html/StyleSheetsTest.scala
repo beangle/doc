@@ -17,12 +17,12 @@
 
 package org.beangle.doc.html
 
-import org.beangle.doc.html.dom.Table.TBody
-import org.beangle.doc.html.dom.{Body, Style, StyleSheets, Table}
+import org.beangle.doc.html.Table.TBody
+import org.beangle.doc.html.{Style, StyleSheets, Table}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class ClassStyleParserTest extends AnyFunSpec with Matchers {
+class StyleSheetsTest extends AnyFunSpec with Matchers {
 
   describe("ClassStyleParser") {
     it("parse css") {
@@ -47,23 +47,23 @@ class ClassStyleParserTest extends AnyFunSpec with Matchers {
           |    font-weight:bold;
           |  }
           |""".stripMargin
-      val styles = ClassStyleParser.parse(a)
+      val styles = StyleSheets.parse(a)
       styles.nonEmpty should be(true)
       styles.size should equal(6)
 
       val sheets = StyleSheets(styles)
-      val body = new Body
+      val body = new Dom.Body
       val bodyStyles = sheets.matches(body)
       bodyStyles.length should be(1)
 
       val table = new Table
       table.classNames = Seq("plan-table")
       val tbody = new TBody
-      table.add(tbody)
+      table.append(tbody)
       var tr = new Table.Row
       val td = new Table.Cell
-      tbody.add(tr)
-      tr.add(td)
+      tbody.append(tr)
+      tr.append(td)
       val tdStyles = sheets.matches(td)
       tdStyles.length should be(1)
     }

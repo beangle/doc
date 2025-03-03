@@ -15,18 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
 
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.html.dom.ClassStyle.*
-
-class StyleSheets(val styles: Seq[ClassStyle]) {
-
-  def matches(node: DomNode): Seq[ClassStyle] = {
-    styles.filter(_.matches(node))
-  }
-
-}
+import org.beangle.doc.html.ClassStyle.ClassEntry
 
 object ClassStyle {
 
@@ -54,11 +46,16 @@ object ClassStyle {
     }
     start
   }
+
+  case class ClassEntry(tagName: String, className: String, ancestor: Option[ClassAncestor])
+
+  case class ClassAncestor(isParent: Boolean, ancestor: ClassEntry)
+
 }
 
 class ClassStyle(name: String, properties: Map[String, String]) extends Style(properties) {
 
-  val chain: ClassEntry = buildChain(name)
+  val chain: ClassEntry = ClassStyle.buildChain(name)
 
   override def toString: String = {
     val ps = properties.map(x => s"${x._1}:${x._2}").toSeq.sorted.mkString(";")
@@ -134,7 +131,3 @@ class ClassStyle(name: String, properties: Map[String, String]) extends Style(pr
     s"${iden1}${name} {\n${ps}\n${iden1}}"
   }
 }
-
-case class ClassEntry(tagName: String, className: String, ancestor: Option[ClassAncestor])
-
-case class ClassAncestor(isParent: Boolean, ancestor: ClassEntry)

@@ -24,7 +24,7 @@ ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.26"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.20"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.21"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
@@ -33,28 +33,30 @@ val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.
 
 lazy val root = (project in file("."))
   .settings(common)
-  .aggregate(docx, pdf, html, excel, transfer)
-
-lazy val docx = (project in file("docx"))
-  .settings(
-    name := "beangle-doc-docx",
-    common,
-    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml))
-  )
+  .aggregate(html, docx, pdf, excel, transfer)
 
 lazy val html = (project in file("html"))
   .settings(
     name := "beangle-doc-html",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(scalaxml))
+    libraryDependencies ++= commonDeps,
+    libraryDependencies ++= Seq(scalaxml)
   )
+
+lazy val docx = (project in file("docx"))
+  .settings(
+    name := "beangle-doc-docx",
+    common,
+    libraryDependencies ++= commonDeps,
+    libraryDependencies ++= Seq(poi_ooxml)
+  ).dependsOn(html)
 
 lazy val excel = (project in file("excel"))
   .settings(
     name := "beangle-doc-excel",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
-    libraryDependencies ++= Seq(jexl3, jcl_over_slf4j)
+    libraryDependencies ++= commonDeps,
+    libraryDependencies ++= Seq(poi_ooxml, jexl3, jcl_over_slf4j)
   ).dependsOn(html)
 
 lazy val pdf = (project in file("pdf"))

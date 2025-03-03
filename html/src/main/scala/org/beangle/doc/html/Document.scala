@@ -15,15 +15,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.doc.html.dom
+package org.beangle.doc.html
+
+import org.beangle.doc.html.Dom.Body
 
 class Document extends DomNode {
   var styleSheets: StyleSheets = new StyleSheets(Seq.empty)
 
-  def name: String = "html"
+  var images: Map[String, Array[Byte]] = Map.empty
 
-  def toHtml: String = {
-    val buf = new StringBuilder("""<!DOCTYPE html>\n<html lang="zh_CN">""".stripMargin)
+  override def name: String = "html"
+
+  override def outerHtml: String = {
+    val buf = new StringBuilder("""<!DOCTYPE html><html lang="zh_CN">""".stripMargin)
     buf.append("\n")
     if (styleSheets.styles.nonEmpty) {
       buf.append("  <head>\n    <style>\n")
@@ -32,7 +36,7 @@ class Document extends DomNode {
     }
     val body = this.childNodes.find(_.name == "body")
     if (body.nonEmpty) {
-      appendXml(body.head, buf, 2)
+      appendXml(body.head, buf)
     }
     buf.append("</html>")
     buf.toString
@@ -42,8 +46,12 @@ class Document extends DomNode {
     childNodes.find(_.name == "body") match
       case None =>
         val body = new Body
-        add(body)
+        append(body)
         body
       case Some(body) => body.asInstanceOf[Body]
+  }
+
+  def newImage(name: String, data: Array[Byte]): Unit = {
+    images = images.updated(name, data)
   }
 }
