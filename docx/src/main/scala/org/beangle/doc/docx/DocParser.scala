@@ -33,19 +33,18 @@ import scala.util.Random
 object DocParser {
 
   def main(args: Array[String]): Unit = {
-    val file = new File("C:\\Users\\duantihua\\Desktop\\ja5.docx")
-    val templateIs = file.toURI.toURL.openStream()
-    val doc = new XWPFDocument(templateIs)
-    //    asScala(doc.getStyles.getStyles) foreach { s =>
-    //      println((s.getName,s.getBasisStyleID,s.getStyleId,s.getLinkStyleID,s.getType))
-    //    }
+    val file = new File(args(0))
+    val doc = new XWPFDocument(file.toURI.toURL.openStream())
     val document = new html.Document
     val parser = new DocParser(document)
     parser.parse(doc)
     document.images foreach { (name, data) =>
       java.nio.file.Files.write(new File(file.getParentFile, name).toPath, data)
     }
-    Files.writeString(new File("C:\\Users\\duantihua\\Desktop\\ja.html"), document.outerHtml)
+    val fileName = Strings.substringBeforeLast(file.getName, ".")
+    val dochtml = new File(file.getParentFile.getAbsolutePath + Files./ + s"${fileName}.html")
+    Files.writeString(dochtml, document.outerHtml)
+    println(s"result:${dochtml.getAbsolutePath}")
   }
 
 }
@@ -72,6 +71,7 @@ class DocParser(document: html.Document) {
     readPageSetting(doc)
     readStyles(doc)
     parse(doc.getBodyElements, body)
+    doc.close()
   }
 
   private def addDefaultBodyStyle(body: Dom.Body): Unit = {
