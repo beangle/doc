@@ -65,7 +65,8 @@ class NumberingReader(numbering: XWPFNumbering) {
         case "lowerletter" => toLetters(counter, false)
         case "upperroman" => toRoman(counter).toUpperCase
         case "lowerroman" => toRoman(counter).toLowerCase
-        case "japanesecounting" => toHanzi(counter)
+        case "chinesecounting" => toHanzi(counter)
+        case "japanesecounting" => toHanzi(counter) //Kanji same as Hanzi
         case _ => String.valueOf(counter)
       }
     //@see https://www.w3school.com.cn/charsets/ref_utf_geometric.asp
