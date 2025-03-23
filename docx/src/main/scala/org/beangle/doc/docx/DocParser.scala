@@ -17,6 +17,7 @@
 
 package org.beangle.doc.docx
 
+import org.apache.poi.openxml4j.util.ZipSecureFile
 import org.apache.poi.xwpf.usermodel.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files
@@ -34,6 +35,7 @@ object DocParser {
 
   def main(args: Array[String]): Unit = {
     val file = new File(args(0))
+    ZipSecureFile.setMinInflateRatio(0.0001d)
     val doc = new XWPFDocument(file.toURI.toURL.openStream())
     val document = new html.Document
     val parser = new DocParser(document)
