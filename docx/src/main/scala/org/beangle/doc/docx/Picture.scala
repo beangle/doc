@@ -17,23 +17,8 @@
 
 package org.beangle.doc.docx
 
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should.Matchers
+import org.beangle.commons.activation.MediaType
 
-class DocHelperTest extends AnyFunSpec with Matchers {
-  val data = Map("param1" -> "value1", "param2" -> "value2")
+import java.io.InputStream
 
-  describe("DocHelper replace function") {
-    it("replace normal") {
-      DocHelper.replace("${param1} is fine", data) should equal("value1 is fine")
-    }
-
-    it("replace normal multiple") {
-      DocHelper.replace("${param1} != ${param2}", data) should equal("value1 != value2")
-    }
-
-    it("replace expression with space") {
-      DocHelper.replace("${param1 } != ${ param2}", data) should equal("value1 != value2")
-    }
-  }
-}
+case class Picture(is: InputStream, mediaType: MediaType, filename: String, width: Int, height: Int)

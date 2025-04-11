@@ -23,8 +23,9 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.26"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.21"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.27"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.8.22"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.1.25-SNAPSHOT"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
@@ -48,7 +49,7 @@ lazy val docx = (project in file("docx"))
     name := "beangle-doc-docx",
     common,
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(poi_ooxml)
+    libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker)
   ).dependsOn(html)
 
 lazy val excel = (project in file("excel"))
