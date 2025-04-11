@@ -179,7 +179,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
       } else {
         val results = Collections.newBuffer[Any]
         var pIdx = 0
-        rs._2.keys foreach { imgName =>
+        rs._2.keys.toSeq.sorted foreach { imgName =>
           val imgIdx = text.indexOf(imgName, pIdx)
           results.addOne(text.substring(pIdx, imgIdx))
           pIdx += (imgIdx + imgName.length)
@@ -202,8 +202,8 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
     val end = "}"
     var processIdx = 0
     while (template.indexOf(start, processIdx) >= processIdx && template.indexOf(end, processIdx) >= processIdx) {
-      val startIdx = text.indexOf(start, processIdx)
-      val endIdx = text.indexOf(end, processIdx)
+      val startIdx = template.indexOf(start, processIdx)
+      val endIdx = template.indexOf(end, processIdx)
       if (startIdx >= 0 && endIdx > startIdx) {
         var exp = template.substring(startIdx + start.length, endIdx).trim()
         if (!exp.startsWith("(") && !exp.endsWith(")!")) {
@@ -216,7 +216,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
       if (endIdx > processIdx) {
         processIdx = endIdx + 1
       } else {
-        processIdx = text.length
+        processIdx = template.length
       }
     }
     try
