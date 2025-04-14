@@ -26,7 +26,7 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.template.api.{TemplateEngine, TemplateInterpreter}
-import org.beangle.template.freemarker.DefaultTemplateEngine
+import org.beangle.template.freemarker.{DefaultTemplateEngine, DefaultTemplateInterpreter}
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URL
@@ -51,8 +51,6 @@ object DocTemplate {
 }
 
 class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
-
-  private val interpreter = new TemplateInterpreter(engine)
 
   private var imageIndex = 0
 
@@ -160,7 +158,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
     text = si._2
     //解析变量
     if (text.contains("${")) {
-      text = interpret(text, data)
+      text = DefaultTemplateInterpreter.process(text, data)
     }
     //实施缩放
     if (si._1 > 0) {
@@ -194,37 +192,6 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
         DocHelper.set(run, results)
       }
     }
-  }
-
-  private def interpret(text: String, data: Any): String = {
-    var template = text.trim()
-    val start = "${"
-    val end = "}"
-    var processIdx = 0
-    while (template.indexOf(start, processIdx) >= processIdx && template.indexOf(end, processIdx) >= processIdx) {
-      val startIdx = template.indexOf(start, processIdx)
-      val endIdx = template.indexOf(end, processIdx)
-      if (startIdx >= 0 && endIdx > startIdx) {
-        var exp = template.substring(startIdx + start.length, endIdx).trim()
-        if (!exp.startsWith("(") && !exp.endsWith(")!")) {
-          exp = s"(${exp})!"
-          val sb = new StringBuilder(template)
-          sb.replace(startIdx + start.length, endIdx, exp)
-          template = sb.toString()
-        }
-      }
-      if (endIdx > processIdx) {
-        processIdx = endIdx + 1
-      } else {
-        processIdx = template.length
-      }
-    }
-    try
-      interpreter.process(template, data)
-    catch
-      case ex: Exception =>
-        logger.error(s"process ${text} error", ex)
-        text
   }
 
   private def generateImgName(mediaType: MediaType): String = {

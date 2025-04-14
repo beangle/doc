@@ -17,27 +17,25 @@
 
 package org.beangle.doc.docx
 
-import org.beangle.template.api.{TemplateEngine, TemplateInterpreter}
-import org.beangle.template.freemarker.DefaultTemplateEngine
+import org.beangle.template.freemarker.{DefaultTemplateEngine, DefaultTemplateInterpreter}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class DocTemplateTest extends AnyFunSpec with Matchers {
+class DocTemplateTest extends AnyFunSpec, Matchers {
   val data = Map("param1" -> "value1", "param2" -> "value2")
 
   describe("DocTemplate replace function") {
 
-    val interpreter = new TemplateInterpreter(DefaultTemplateEngine())
     it("replace normal") {
-      interpreter.process("${param1} is fine", data) should equal("value1 is fine")
+      DefaultTemplateInterpreter.process("${param1} is fine", data) should equal("value1 is fine")
     }
 
     it("replace normal multiple") {
-      interpreter.process("#img#${param1} != ${param2}", data) should equal("#img#value1 != value2")
+      DefaultTemplateInterpreter.process("#img#${param1} != ${param2}", data) should equal("#img#value1 != value2")
     }
 
     it("replace expression with space") {
-      interpreter.process("${param1 } != ${ param2}", data) should equal("value1 != value2")
+      DefaultTemplateInterpreter.process("${param1 } != ${ param2}", data) should equal("value1 != value2")
     }
     it("splitImg") {
       val template = new DocTemplate(null, DefaultTemplateEngine())
