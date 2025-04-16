@@ -240,7 +240,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
     if (text.contains(start)) {
       val startIdx = text.indexOf(start)
       val endIdx = text.indexOf(end, startIdx)
-      if (startIdx > 0 && endIdx > startIdx) {
+      if (startIdx >= 0 && endIdx > startIdx) {
         new StringBuilder(text).delete(startIdx, endIdx + end.length).toString()
       } else {
         text
