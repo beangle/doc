@@ -163,7 +163,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
     style.font.flatMap(_.asciiFont) match
       case None => cell.setCellValue(texts)
       case Some(asciiFont) =>
-        val parts = splitText(texts, asciiFont, style.font.get)
+        val parts = splitAsciiAndHanzi(texts, asciiFont, style.font.get)
         if (td.rowspan == 1 && style.height.isEmpty) { //不跨行，且没有指定高度的情况下
           val newLines = Math.ceil(texts.length * 1.0 / getCharNums(td))
           val newHeight = newLines * sheet.getDefaultRowHeightInPoints
@@ -200,7 +200,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
    * @param defaultFont
    * @return
    */
-  private def splitText(text: String, asciiFont: Font, defaultFont: Font): Seq[FontText] = {
+  private def splitAsciiAndHanzi(text: String, asciiFont: Font, defaultFont: Font): Seq[FontText] = {
     if (Strings.isBlank(text)) {
       List.empty
     } else {
@@ -209,14 +209,17 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       val buf = new StringBuilder()
       var isIdeographic = Character.isIdeographic(chars(0))
       chars foreach { c =>
-        val nextIsIdeographic = Character.isIdeographic(c)
-        if nextIsIdeographic == isIdeographic then
+        if c == ' ' || c == '\n' then //对空白字符不区分西文中文，直接接到上次的字符后
           buf.append(c)
         else
-          parts.append(FontText(buf.toString(), Some(if isIdeographic then defaultFont else asciiFont)))
-          buf.clear()
-          buf.append(c)
-          isIdeographic = nextIsIdeographic
+          val nextIsIdeographic = Character.isIdeographic(c)
+          if nextIsIdeographic == isIdeographic then
+            buf.append(c)
+          else
+            parts.append(FontText(buf.toString(), Some(if isIdeographic then defaultFont else asciiFont)))
+            buf.clear()
+            buf.append(c)
+            isIdeographic = nextIsIdeographic
       }
       if (buf.nonEmpty) parts.append(FontText(buf.toString(), Some(if isIdeographic then defaultFont else asciiFont)))
       parts.toSeq

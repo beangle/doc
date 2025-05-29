@@ -17,7 +17,6 @@
 
 package org.beangle.doc.docx
 
-import org.apache.poi.common.usermodel.PictureType
 import org.apache.poi.util.Units
 import org.apache.poi.xwpf.usermodel.{XWPFDocument, XWPFParagraph, XWPFRun}
 import org.beangle.commons.activation.{MediaType, MediaTypes}
@@ -25,7 +24,7 @@ import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.commons.logging.Logging
-import org.beangle.template.api.{TemplateEngine, TemplateInterpreter}
+import org.beangle.template.api.TemplateEngine
 import org.beangle.template.freemarker.{DefaultTemplateEngine, DefaultTemplateInterpreter}
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
@@ -133,7 +132,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
         if p(i).startsWith("\"") then
           val v = Strings.substringBetween(p(i), "\"", "\"")
           properties.put(p(i - 1), v)
-        else if (data.contains(p(i))) {
+        else if (data.contains(p(i)) && null != data(p(i))) {
           properties.put(p(i - 1), data(p(i)).toString)
         }
         i += 2

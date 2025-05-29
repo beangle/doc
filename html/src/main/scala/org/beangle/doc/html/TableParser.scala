@@ -129,10 +129,18 @@ object TableParser {
     document
   }
 
+  /** 从HTML的表示读成值
+   *
+   * @param node
+   * @return
+   */
   private def readText(node: Node): String = {
     var text = node.child.map(_.toString).mkString
     text = Strings.replace(text, "\r", "")
-    text = text.replaceAll("\\s*\\n\\s*", "") //去除空格之后，再将&nbsp;还原
-    Strings.replace(text, "&amp;nbsp;", " ").trim()
+    text = text.replaceAll("\\s*\\n\\s*", "") //去除换行之后，再将<br/>还原
+    text = Strings.replace(text, "<br/>", "\n")
+    text = Strings.replace(text, "&nbsp;", " ")
+    text = Strings.replace(text, "&amp;nbsp;", " ")
+    text.trim()
   }
 }

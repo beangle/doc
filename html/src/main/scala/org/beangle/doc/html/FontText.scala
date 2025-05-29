@@ -17,12 +17,5 @@
 
 package org.beangle.doc.html
 
-import org.beangle.commons.lang.Strings
-
 case class FontText(value: String, font: Option[Font]) {
-  def texts: String = {
-    var t = value
-    t = Strings.replace(t, "<br/>", "\n")
-    t
-  }
 }
