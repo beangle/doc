@@ -38,7 +38,11 @@ object TableWriter {
       if (null == sheetName) {
         sheet = workbook.createSheet()
       } else {
-        sheet = workbook.createSheet(sheetName)
+        if (null == workbook.getSheet(sheetName)) {
+          sheet = workbook.createSheet(sheetName)
+        } else {
+          sheet = workbook.createSheet(sheetName + "1")
+        }
       }
       TableWriter.write(table.asInstanceOf[Table], sheet, 0)
     }
@@ -165,10 +169,13 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
       case Some(asciiFont) =>
         val parts = splitAsciiAndHanzi(texts, asciiFont, style.font.get)
         if (td.rowspan == 1 && style.height.isEmpty) { //不跨行，且没有指定高度的情况下
-          val newLines = Math.ceil(texts.length * 1.0 / getCharNums(td))
-          val newHeight = newLines * sheet.getDefaultRowHeightInPoints
-          if (newHeight > cell.getRow.getHeightInPoints) {
-            cell.getRow.setHeightInPoints(newHeight.floatValue)
+          val charLength = getCharLength(td)
+          if (charLength > 0) {
+            val newLines = Math.ceil(texts.length * 1.0 / charLength)
+            val newHeight = newLines * sheet.getDefaultRowHeightInPoints
+            if (newHeight > cell.getRow.getHeightInPoints) {
+              cell.getRow.setHeightInPoints(newHeight.floatValue)
+            }
           }
         }
         val str = new XSSFRichTextString(parts.map(_.value).mkString)
@@ -183,11 +190,19 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
     cell.setCellStyle(getOrCreateStyle(td, style))
   }
 
-  private def getCharNums(td: Table.Cell): Int = {
+  /**
+   * 得到一个单元格的可显示的字符宽度
+   *
+   * @param td cell
+   * @return
+   */
+  private def getCharLength(td: Table.Cell): Int = {
     var charNums = 0d
     (0 until td.colspan) foreach { i =>
-      if (widths(colIndex + i) != null) {
-        charNums += widths(colIndex + i).charNums
+      if (widths.length > colIndex + i) {
+        if (widths(colIndex + i) != null) {
+          charNums += widths(colIndex + i).charNums
+        }
       }
     }
     charNums.toInt
