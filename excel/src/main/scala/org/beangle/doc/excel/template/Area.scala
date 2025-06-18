@@ -332,7 +332,7 @@ class Area(val startCellRef: CellRef, val size: Size, var transformer: Transform
     val startRow = startCellRef.row
     val startCol = startCellRef.col
     for (row <- 0 until size.height; col <- 0 until size.width) {
-      val cellRef: CellRef = new CellRef(sheetName, startRow + row, startCol + col)
+      val cellRef = new CellRef(sheetName, startRow + row, startCol + col)
       transformer.clearCell(cellRef)
     }
     transformer.resetArea(getAreaRef)

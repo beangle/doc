@@ -20,14 +20,12 @@ package org.beangle.doc.excel.template
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.ss.util.{CellAddress, CellRangeAddress}
 import org.apache.poi.xssf.streaming.SXSSFWorkbook
-import org.apache.poi.xssf.usermodel.{XSSFCell, XSSFSheet, XSSFWorkbook}
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.excel.*
 import org.beangle.doc.excel.CellOps.*
 import org.beangle.doc.excel.WorkbookOps.given
-import org.beangle.doc.excel.template.DefaultTransformer.*
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCell
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 import java.io.{IOException, InputStream, OutputStream}
 import scala.collection.mutable
@@ -105,7 +103,7 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
     transformCell(srcCellRef, targetCellRef, context, updateRowHeightFlag, cellData, destSheet, destRow)
   }
 
-  protected def isTransformable(srcCellRef: CellRef, targetCellRef: CellRef): CellData = {
+  private def isTransformable(srcCellRef: CellRef, targetCellRef: CellRef): CellData = {
     getCellData(srcCellRef) match {
       case Some(cd) => if targetCellRef == null || Strings.isBlank(targetCellRef.sheetName) then null else cd
       case None => null
@@ -159,15 +157,19 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
     }
   }
 
-  final protected def copyMergedRegions(sheetData: SheetData, srcCellData: CellData, destCell: CellRef): Unit = {
+  private final def copyMergedRegions(sheetData: SheetData, srcCellData: CellData, destCell: CellRef): Unit = {
+    //如果是模板中的合并格的左上位置，则可以进行复制
     sheetData.mergedRegions.find(x => x.getFirstRow == srcCellData.row && x.getFirstColumn == srcCellData.col) foreach { r =>
-      findAndRemoveExistingCellRegion(destCell)
       val destSheet = workbook.getSheet(destCell.sheetName)
       destSheet.addMergedRegion(new CellRangeAddress(destCell.row, destCell.row + r.getLastRow - r.getFirstRow, destCell.col, destCell.col + r.getLastColumn - r.getFirstColumn))
     }
   }
 
-  final protected def findAndRemoveExistingCellRegion(cellRef: CellRef): Unit = {
+  /** FXIME 效率较低
+   *
+   * @param cellRef
+   */
+  final private def findAndRemoveExistingCellRegion(cellRef: CellRef): Unit = {
     val destSheet: Sheet = workbook.getSheet(cellRef.sheetName)
     val numMergedRegions = destSheet.getNumMergedRegions
     var breaked = false
@@ -191,7 +193,6 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
   override def clearCell(cellRef: CellRef): Unit = {
     if (cellRef != null && null != cellRef.sheetName) {
       workbook.cleanCell(cellRef)
-      findAndRemoveExistingCellRegion(cellRef)
     }
   }
 
