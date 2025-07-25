@@ -17,7 +17,7 @@
 
 package org.beangle.doc.html
 
-import org.beangle.doc.html.Dom.Body
+import org.beangle.doc.html.Dom.{Body, Head, HeadTitle}
 
 class Document extends DomNode {
   var styleSheets: StyleSheets = new StyleSheets(Seq.empty)
@@ -40,6 +40,23 @@ class Document extends DomNode {
     }
     buf.append("</html>")
     buf.toString
+  }
+
+  def updateTitle(title: String): Unit = {
+    val head = childNodes.find(_.name == "head") match
+      case None =>
+        val head = new Head
+        append(head)
+        head
+      case Some(head) => head.asInstanceOf[Head]
+
+    head.append(new HeadTitle(title))
+  }
+
+  def title: Option[String] = {
+    childNodes.find(_.name == "head") match
+      case None => None
+      case Some(head) => head.firstChild(classOf[HeadTitle]).map(_.value)
   }
 
   def body: Body = {

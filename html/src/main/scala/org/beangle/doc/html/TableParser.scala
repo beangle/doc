@@ -60,17 +60,27 @@ object TableParser {
     cols foreach { col =>
       t = Strings.replace(t, col, col.substring(0, col.length - 1) + "/>")
     }
+
+    val document = new Document
+
+    val headStr = find(t, "(?ims)<head(.*)</head>").headOption.getOrElse("<head></head>")
+    val headXml = scala.xml.XML.loadString("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + headStr)
+
+    (headXml \\ "title") foreach { title =>
+      document.updateTitle(title.text)
+    }
     var bodyStr = find(t, "(?ims)<body(.*)</body>").head
     bodyStr = Strings.replace(bodyStr, "<br>", "<br/>")
     bodyStr = Strings.replace(bodyStr, "&nbsp;", "&amp;nbsp;")
     val contents = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + bodyStr
 
     val xml = scala.xml.XML.loadString(contents)
-    val document = new Document
     document.styleSheets = new StyleSheets(classStyles.toSeq)
+
     val body = new Dom.Body
     document.append(body)
     parseAttributes(xml, body)
+
 
     (xml \ "table") foreach { tab =>
       val table = new Table

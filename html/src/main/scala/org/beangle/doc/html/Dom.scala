@@ -90,4 +90,8 @@ object Dom {
   class Br extends DomNode {
     override def nonVoid: Boolean = true
   }
+
+  class HeadTitle(val value: String) extends DomNode
+
+  class Head extends DomNode
 }

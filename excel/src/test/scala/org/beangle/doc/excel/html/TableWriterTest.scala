@@ -17,7 +17,8 @@
 
 package org.beangle.doc.excel.html
 
-import org.beangle.commons.io.Files
+import org.beangle.commons.io.{Files, IOs}
+import org.beangle.commons.lang.ClassLoaders
 
 import java.io.{File, FileOutputStream}
 
@@ -25,9 +26,9 @@ object TableWriterTest {
 
   def main(args: Array[String]): Unit = {
     val file = File.createTempFile("template", ".xlsx")
-    val t = Files.readString(new File("D:\\workspace\\beangle\\doc\\excel\\src\\test\\resources\\table.html"))
+    val t = IOs.readString(ClassLoaders.getResourceAsStream("table.html").head)
     val os = new FileOutputStream(file)
-    val workbook = TableWriter.writer(t)
+    val workbook = TableWriter.write(t)
     workbook.write(os)
     println(file.getAbsolutePath)
     os.close()

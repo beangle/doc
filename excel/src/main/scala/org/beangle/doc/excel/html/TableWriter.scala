@@ -27,9 +27,13 @@ import org.beangle.doc.html.*
 /** 将HTML中的表格，转换到Excel中
  */
 object TableWriter {
-  def writer(html: String): XSSFWorkbook = {
+  def write(html: String): XSSFWorkbook = {
+    write(TableParser.parse(html))
+  }
+
+  def write(doc: Document): XSSFWorkbook = {
     val workbook = new XSSFWorkbook()
-    val body = TableParser.parse(html).body
+    val body = doc.body
 
     val tables = body.childNodes.filter(_.name == "table")
     tables foreach { table =>
