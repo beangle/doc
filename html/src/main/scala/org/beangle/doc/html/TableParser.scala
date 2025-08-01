@@ -145,7 +145,15 @@ object TableParser {
    * @return
    */
   private def readText(node: Node): String = {
-    var text = node.child.map(_.toString).mkString
+    var text = node.child.map { c =>
+      val cstr = c.text
+      if cstr.isEmpty then
+        val outerhtml = c.toString
+        if outerhtml.startsWith("<br") || outerhtml.startsWith("<p") then "<br/>" else ""
+      else
+        cstr
+    }.mkString
+
     text = Strings.replace(text, "\r", "")
     text = text.replaceAll("\\s*\\n\\s*", "") //去除换行之后，再将<br/>还原
     text = Strings.replace(text, "<br/>", "\n")
