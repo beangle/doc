@@ -137,7 +137,7 @@ class DocParser(document: html.Document) {
       var t = run.getText(0)
       if (null == t) t = ""
       if (Strings.isNotEmpty(t)) {
-        t = Strings.replace(t, " ", "&ensp;") //半个字符的宽度
+        t = processText(t)
         var elem: Element = new Dom.Text(t)
         run.getVerticalAlignment match {
           case STVerticalAlignRun.SUPERSCRIPT => elem = Dom.wrap("sup", elem)
@@ -514,5 +514,15 @@ class DocParser(document: html.Document) {
         n.addStyle(name, s"${pct}%")
       case x: Any =>
     }
+  }
+
+  private def processText(str: String): String = {
+    var t = str
+    t = t.replace('\u2002', ' ')
+    val nonblankIdx = t.indexWhere(x => x != ' ')
+    if (nonblankIdx > 0) {
+      t = ("&ensp;" * nonblankIdx) + t.substring(nonblankIdx)
+    }
+    t
   }
 }
