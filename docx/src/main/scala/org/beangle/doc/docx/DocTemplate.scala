@@ -79,6 +79,10 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
     bos.toByteArray
   }
 
+  /** 将表达式开始，但是在一个run中没有结束的run和后续几个进行合并
+   *
+   * @param p
+   */
   private def mergeRun(p: XWPFParagraph): Unit = {
     val runs = p.getRuns
     if (runs != null) {
@@ -104,7 +108,7 @@ class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
           removed.addOne(i)
         } else {
           if (null != text) {
-            if (isExpStart(text)) {
+            if (isExpStart(text) && !isExpEnd(text)) { //开始但是没有结束的，作为合并的起点
               headRun = Some(run)
               headText.addAll(text)
             }
