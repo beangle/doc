@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.4.17-SNAPSHOT"
+ThisBuild / version := "0.4.17"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,14 +23,14 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.31"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.32"
 val beangle_model = "org.beangle.data" % "beangle-model" % "5.9.2"
-val beangle_template = "org.beangle.template" % "beangle-template" % "0.1.27"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.1.28"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M8"
-val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.0.0"
+val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.3.0"
 
 lazy val root = (project in file("."))
   .settings(common)
