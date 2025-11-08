@@ -24,8 +24,7 @@ import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.commons.logging.Logging
-import org.beangle.template.api.TemplateEngine
-import org.beangle.template.freemarker.{DefaultTemplateEngine, DefaultTemplateInterpreter}
+import org.beangle.template.freemarker.DefaultTemplateInterpreter
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URL
@@ -35,21 +34,21 @@ object DocTemplate {
   def process(url: URL, data: collection.Map[String, Any]): Array[Byte] = {
     val templateIs = url.openStream()
     val doc = new XWPFDocument(templateIs)
-    val template = new DocTemplate(doc, DefaultTemplateEngine())
+    val template = new DocTemplate(doc)
     val bytes = template.process(data)
     templateIs.close()
     bytes
   }
 
   def main(args: Array[String]): Unit = {
-    val template = new DocTemplate(null, DefaultTemplateEngine())
+    val template = new DocTemplate(null)
     val rs = template.splitImg("dadffa 申请人签名：[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]${step0_auditAt}[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]")
     println(template.splitImg("dadffa 申请人签名：${dd}"))
     println(rs)
   }
 }
 
-class DocTemplate(doc: XWPFDocument, engine: TemplateEngine) extends Logging {
+class DocTemplate(doc: XWPFDocument) extends Logging {
 
   private var imageIndex = 0
 

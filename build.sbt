@@ -24,11 +24,11 @@ ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.32"
-val beangle_model = "org.beangle.data" % "beangle-model" % "5.10.0"
-val beangle_template = "org.beangle.template" % "beangle-template" % "0.1.28"
+val beangle_model = "org.beangle.data" % "beangle-model" % "5.11.0"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.0"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
-val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.0"
+val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.1"
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M8"
 val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.3.0"
 
