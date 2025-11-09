@@ -38,7 +38,7 @@ class DocTemplateTest extends AnyFunSpec, Matchers {
       DefaultTemplateInterpreter.process("${param1 } != ${ param2}", data) should equal("value1 != value2")
     }
     it("splitImg") {
-      val template = new DocTemplate(null, DefaultTemplateEngine())
+      val template = new DocTemplate(null)
       val rs1 = template.splitImg("申请人签名：${dd}")
       val rs2 = template.splitImg("申请人签名：[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]${step0_auditAt}[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]")
       assert(rs1._1 == "申请人签名：${dd}")
