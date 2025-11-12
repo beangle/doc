@@ -24,6 +24,7 @@ import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.commons.logging.Logging
+import org.beangle.template.api.TemplateInterpreter
 import org.beangle.template.freemarker.DefaultTemplateInterpreter
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
@@ -48,7 +49,7 @@ object DocTemplate {
   }
 }
 
-class DocTemplate(doc: XWPFDocument) extends Logging {
+class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultTemplateInterpreter) extends Logging {
 
   private var imageIndex = 0
 
@@ -160,7 +161,7 @@ class DocTemplate(doc: XWPFDocument) extends Logging {
     text = si._2
     //解析变量
     if (text.contains("${")) {
-      text = DefaultTemplateInterpreter.process(text, data)
+      text = interpreter.process(text, data)
     }
     //实施缩放
     if (si._1 > 0) {

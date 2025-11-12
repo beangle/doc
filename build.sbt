@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.4.20-SNAPSHOT"
+ThisBuild / version := "0.4.20"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -49,7 +49,7 @@ lazy val docx = (project in file("docx"))
     name := "beangle-doc-docx",
     common,
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker)
+    libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker, log4j_to_slf4j)
   ).dependsOn(html)
 
 lazy val excel = (project in file("excel"))
@@ -57,7 +57,7 @@ lazy val excel = (project in file("excel"))
     name := "beangle-doc-excel",
     common,
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(poi_ooxml, jexl3, jcl_over_slf4j)
+    libraryDependencies ++= Seq(poi_ooxml, jexl3, log4j_to_slf4j, jcl_over_slf4j)
   ).dependsOn(html)
 
 lazy val pdf = (project in file("pdf"))
