@@ -28,7 +28,7 @@ import scala.collection.mutable.ListBuffer
  *
  * @author chaostone
  */
-abstract class AbstractImporter extends Importer with Logging {
+abstract class AbstractImporter extends Importer, Logging {
   protected var result: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
   var success, fail = 0
@@ -71,9 +71,10 @@ abstract class AbstractImporter extends Importer with Logging {
         }
       }
       listeners.foreach(l => l.onFinish(tr))
-      reader.close()
     } catch {
       case e: Throwable => tr.addFailure("导入异常", e.getMessage)
+    } finally {
+      if (null != reader) reader.close()
     }
     logger.debug("importer elapse: " + (System.currentTimeMillis() - transferStartAt))
   }
@@ -122,11 +123,9 @@ abstract class AbstractImporter extends Importer with Logging {
   }
 
   override def isDataValid: Boolean = {
-    this.curData.values exists { v =>
-      v match {
-        case tt: String => Strings.isNotBlank(tt)
-        case _ => null != v
-      }
+    this.curData.values exists {
+      case tt: String => Strings.isNotBlank(tt)
+      case v => null != v
     }
   }
 
@@ -138,7 +137,7 @@ abstract class AbstractImporter extends Importer with Logging {
 
 class AttributePrepare extends ImportPrepare {
 
-  def prepare(importer: Importer) : Unit = {
+  def prepare(importer: Importer): Unit = {
     val reader = importer.reader
     importer.asInstanceOf[AbstractImporter].setAttrs(reader.readAttributes())
   }
