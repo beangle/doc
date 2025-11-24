@@ -26,7 +26,7 @@ import java.nio.file.Files
 import java.time.MonthDay
 import scala.collection.mutable
 
-class TransformHelperTest extends AnyFunSpec with Matchers {
+class TransformHelperTest extends AnyFunSpec, Matchers {
 
   def buildContext(): mutable.HashMap[String, Any] = {
     val derek = Employee("Eerek", 35, 3000, 0.30, MonthDay.parse("--09-01"))
