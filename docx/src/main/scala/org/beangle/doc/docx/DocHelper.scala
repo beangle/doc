@@ -18,14 +18,9 @@
 package org.beangle.doc.docx
 
 import org.apache.poi.common.usermodel.PictureType
-import org.apache.poi.util.Units
-import org.apache.poi.xwpf.usermodel.{XWPFDocument, XWPFParagraph, XWPFRun}
-import org.beangle.commons.codec.binary.Base64
-import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.{Chars, Strings}
-import org.beangle.template.freemarker.DefaultTemplateEngine
+import org.apache.poi.xwpf.usermodel.XWPFRun
+import org.beangle.commons.lang.Strings
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URL
 
 object DocHelper {

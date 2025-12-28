@@ -36,7 +36,10 @@ object Htmltopdf {
 }
 
 /** 转换HTML到PDF工具类
- *
+ * <p>
+ * 该库已经很久不维护了，如果使用Node.js,可以考虑使用puppeteer(https://github.com/puppeteer/puppeteer)
+ * 他会启动chrome，使用API中的pdf，可以完成转换工作。
+ * </p>
  * @see https://github.com/wooio/htmltopdf-java
  * @see https://wkhtmltopdf.org/libwkhtmltox/pagesettings.html
  */

@@ -26,7 +26,6 @@ import java.io.*
 object PdfMerger extends Logging {
   /** pdf合并
    *
-   * @param inputStreams 要合并的pdf的InputStream数组
    * @return 合并后的pdf的二进制内容
    * */
   def merge(ins: Seq[InputStream], bos: OutputStream): Unit = {
