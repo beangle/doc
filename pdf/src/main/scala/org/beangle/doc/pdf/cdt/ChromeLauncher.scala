@@ -193,7 +193,7 @@ class ChromeLauncher(config: Configuration) extends Logging {
     }
     try {
       chromeProcess = Processes.launch(chromeBinary.toString, arguments.build(), pb => pb.redirectErrorStream(true).redirectOutput(Redirect.PIPE))
-      new Chrome(this, "localhost", waitForDevToolsServer(chromeProcess))
+      new Chrome(this, "localhost", waitForDevToolsPort(chromeProcess))
     } catch {
       case e: IOException => throw new RuntimeException("Failed starting chrome process.", e)
       case e: Exception =>
@@ -204,7 +204,7 @@ class ChromeLauncher(config: Configuration) extends Logging {
 
   def isAlive: Boolean = chromeProcess != null && chromeProcess.isAlive
 
-  private def waitForDevToolsServer(process: Process): Int = {
+  private def waitForDevToolsPort(process: Process): Int = {
     val matcher = Processes.grep(process, Pattern.compile("^DevTools listening on ws:\\/\\/.+?:(\\d+)\\/"), config.startupWaitTime)
     matcher match
       case None => throw new RuntimeException("cannot find dev tools listening port")

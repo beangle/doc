@@ -81,7 +81,6 @@ object TableParser {
     document.append(body)
     parseAttributes(xml, body)
 
-
     (xml \ "table") foreach { tab =>
       val table = new Table
       val colGroup = new Table.ColGroup

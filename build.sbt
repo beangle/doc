@@ -23,7 +23,7 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.33"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.34-SNAPSHOT"
 val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.1"
 
 val commonDeps = Seq(logback_classic % "test", beangle_commons, scalatest)
@@ -31,6 +31,9 @@ val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-cl
 val json4s = "org.json4s" % "json4s-native_3" % "4.1.0-M8"
 val itext_bouncy_castle_adapter = "com.itextpdf" % "bouncy-castle-adapter" % "9.4.0"
 val itext_layout = "com.itextpdf" % "layout" % "9.4.0"
+val jod_local = "org.jodconverter" % "jodconverter-local" % "4.4.11" % "optional" exclude("org.openoffice", "*")
+val libreoffice = "org.libreoffice" % "libreoffice" % "24.8.4" % "optional"
+
 
 lazy val root = (project in file("."))
   .settings(common)
@@ -67,6 +70,6 @@ lazy val pdf = (project in file("pdf"))
     Compile / mainClass := Some("org.beangle.doc.pdf.SPDConverter"),
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(itext_kernel, itext_layout, itext_bouncy_castle_adapter, jna),
-    libraryDependencies ++= Seq(json4s, websocket_tyrus_client)
+    libraryDependencies ++= Seq(json4s, websocket_tyrus_client, jod_local, libreoffice)
   )
 publish / skip := true
