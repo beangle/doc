@@ -18,13 +18,12 @@
 package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.io.IOs
+import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.json4s.*
-import org.json4s.native.JsonMethods.*
 
 import java.io.{IOException, InputStream}
-import java.net.{HttpURLConnection, URI, URL}
+import java.net.{HttpURLConnection, URI}
 import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -39,9 +38,10 @@ object Chrome extends Logging {
 }
 
 /** Chrome DevTools Client
- *  It can be used for *instrumenting, inspecting, debuging and profiling Chromium, Chrome and other Blink-based browsers.*
- *  For more information on DevTools, see https://chromedevtools.github.io/devtools-protocol/.
- *  Some ideas come from Github project chrome-devtools-java-client.
+ * It can be used for *instrumenting, inspecting, debuging and profiling Chromium, Chrome and other Blink-based browsers.*
+ * For more information on DevTools, see https://chromedevtools.github.io/devtools-protocol/.
+ * Some ideas come from Github project chrome-devtools-java-client.
+ *
  * @param launcher
  * @param host
  * @param port
@@ -120,11 +120,11 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
         inputStream = connection.getInputStream
 
         val res = IOs.readString(inputStream)
-        val v = parse(res)
+        val v = Json.parse(res)
         if (responseType == classOf[ChromePage]) {
           toPage(v).asInstanceOf[T]
         } else if (responseType.isArray && responseType.getComponentType == classOf[ChromePage]) {
-          v.children.filter(x => (x \ "type").values.toString == "page").map(x => toPage(x)).toArray.asInstanceOf[T]
+          v.children.filter(x => (x \ "type").toString == "page").map(x => toPage(x)).toArray.asInstanceOf[T]
         } else if (responseType == classOf[String]) {
           res.asInstanceOf[T]
         } else {
@@ -146,7 +146,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     }
   }
 
-  private def toPage(v: JValue): ChromePage = {
-    ChromePage(nextPageIndex(), (v \ "id").values.toString, (v \ "webSocketDebuggerUrl").values.toString)
+  private def toPage(v: Json): ChromePage = {
+    ChromePage(nextPageIndex(), (v \ "id").toString, (v \ "webSocketDebuggerUrl").toString)
   }
 }

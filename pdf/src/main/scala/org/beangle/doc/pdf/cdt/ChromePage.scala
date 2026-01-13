@@ -19,8 +19,6 @@ package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.lang.Charsets
-import org.json4s.*
-
 import java.util.concurrent.CountDownLatch
 
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
@@ -44,7 +42,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
     socket.addHandler("Page.frameStoppedLoading", () => if (null != workingLatch) workingLatch.countDown())
     workingLatch = new CountDownLatch(1)
     val r = socket.invoke("Page.navigate", Map("url" -> url))
-    if r.isOk then frameId = (r.result \ "frameId").values.toString
+    if r.isOk then frameId = (r.result \ "frameId").toString
     else frameId = null
 
     frameId
@@ -60,7 +58,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
         val r = socket.invoke("Page.printToPDF", params)
         workingLatch.countDown()
         workingLatch = null
-        if r.isOk then ((r.result \ "data").values.toString, "") else ("", r.error)
+        if r.isOk then ((r.result \ "data").toString, "") else ("", r.error)
       } else {
         ("", "Page is loading")
       }

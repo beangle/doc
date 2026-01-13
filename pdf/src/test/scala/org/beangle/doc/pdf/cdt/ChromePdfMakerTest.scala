@@ -28,7 +28,6 @@ object ChromePdfMakerTest {
 
   def main(args: Array[String]): Unit = {
     val urls = Array("https://www.oschina.net/news/248319/docker-24-0-3-released",
-      "https://stacktuts.com/how-to-open-new-incognito-window-with-javascript-google-chrome",
       "https://www.oschina.net/news/260444/android-14")
 
     val options = PrintOptions.defaultOptions
@@ -39,7 +38,7 @@ object ChromePdfMakerTest {
     val converter = new SPDConverter(new ChromePdfMaker)
 
     val exe = Executors.newFixedThreadPool(3)
-    (0 to 2) foreach { i =>
+    urls.indices foreach { i =>
       exe.submit(new Runnable() {
         override def run(): Unit = {
           converter.convert(URI.create(urls(i)), new File(s"target/temp${i}.pdf"), options)

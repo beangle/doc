@@ -17,20 +17,19 @@
 
 package org.beangle.doc.pdf.cdt
 
+import jakarta.websocket.*
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.pdf.cdt.WebSocket.Response
 import org.glassfish.tyrus.client.ClientManager
 import org.glassfish.tyrus.container.grizzly.client.GrizzlyClientContainer
-import org.json4s.*
-import org.json4s.native.JsonMethods.*
 
 import java.io.IOException
 import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import jakarta.websocket.*
 
 object WebSocket {
 
@@ -43,7 +42,7 @@ object WebSocket {
     socket
   }
 
-  case class Response(result: JValue, error: String) {
+  case class Response(result: Json, error: String) {
     def isOk: Boolean = Strings.isBlank(error)
   }
 }
@@ -77,7 +76,7 @@ class WebSocket(uri: URI) extends Logging {
         logger.debug(s"Connection closed ${closeReason.getReasonPhrase},${uri}")
         if (null != invokeLatch) {
           invokeLatch.countDown()
-          res = Response(JNothing, closeReason.getReasonPhrase)
+          res = Response(Json.emptyObject, closeReason.getReasonPhrase)
         }
         handlers.values foreach { f => f() }
       }
@@ -94,19 +93,15 @@ class WebSocket(uri: URI) extends Logging {
           if var1.length > 5000 then logger.debug("Receive message " + var1.substring(0, 40))
           else logger.debug("Receive message " + var1)
         }
-        val v = parse(var1)
-        if ((v \ "id") != JNothing) {
-          val id = (v \ "id").values.toString.toInt
+        val v = Json.parseObject(var1)
+        if (v.contains("id")) {
+          val id = v.getInt("id")
           if (id == lastId) {
-            val errorText = (v \ "errorText").values match
-              case None => ""
-              case t: Any => t.toString
-            res = Response(v \ "result", errorText)
-
+            res = Response(v \ "result", v.getString("errorText"))
             if null != invokeLatch then invokeLatch.countDown()
           }
-        } else if ((v \ "method") != JNothing) {
-          handlers.get((v \ "method").values.toString) foreach { f => f() }
+        } else if (v.contains("method")) {
+          handlers.get(v.getString("method")) foreach { f => f() }
         } else {
           logger.error("Ignore event " + var1)
         }
@@ -141,9 +136,9 @@ class WebSocket(uri: URI) extends Logging {
     } catch {
       case e: Throwable =>
         logger.error("invoke socket error", e)
-        if null == res then res = Response(JNothing, e.getMessage)
+        if null == res then res = Response(Json.emptyObject, e.getMessage)
     }
-    if null == res then res = Response(JNothing, "")
+    if null == res then res = Response(Json.emptyObject, "")
     else if Strings.isNotBlank(res.error) then logger.error(res.error)
     res
   }
