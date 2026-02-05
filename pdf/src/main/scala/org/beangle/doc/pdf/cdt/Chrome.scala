@@ -17,6 +17,7 @@
 
 package org.beangle.doc.pdf.cdt
 
+import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.io.IOs
 import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
@@ -26,6 +27,7 @@ import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, URI}
 import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 
 object Chrome {
 
@@ -53,6 +55,8 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
 
   private val pageIdGenerator = new AtomicInteger(1)
 
+  private val lock = new ReentrantLock()
+
   private def nextPageIndex(): Int = pageIdGenerator.getAndIncrement()
 
   collectPages()
@@ -76,13 +80,15 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     }
   }
 
-  private def findOrCreatePage(url: String): ChromePage = this.synchronized {
-    if (freePages.isEmpty) {
-      val p = createPage(url)
-      p.enable()
-      p
-    } else {
-      freePages.poll()
+  private def findOrCreatePage(url: String): ChromePage = {
+    Locks.withLock(lock) {
+      if (freePages.isEmpty) {
+        val p = createPage(url)
+        p.enable()
+        p
+      } else {
+        freePages.poll()
+      }
     }
   }
 

@@ -19,6 +19,7 @@ package org.beangle.doc.pdf.cdt
 
 import jakarta.websocket.*
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.pdf.PdfLogger
@@ -30,10 +31,11 @@ import java.io.IOException
 import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 
 object WebSocket {
 
-  val client: ClientManager = ClientManager.createClient(classOf[GrizzlyClientContainer].getName)
+  private val client: ClientManager = ClientManager.createClient(classOf[GrizzlyClientContainer].getName)
   client.getProperties.put("org.glassfish.tyrus.incomingBufferSize", 32 * 1024 * 1024)
 
   def apply(wsUrl: String): WebSocket = {
@@ -50,6 +52,8 @@ object WebSocket {
 class WebSocket(uri: URI) {
 
   private var session: Session = _
+
+  private val sendLock = new ReentrantLock()
 
   private var invokeLatch: CountDownLatch = _
 
@@ -116,31 +120,33 @@ class WebSocket(uri: URI) {
     session.getBasicRemote.sendText(msg)
   }
 
-  def invoke(method: String, params: Map[String, Any]): Response = this.synchronized {
-    val id = commandId.getAndIncrement
-    this.lastId = id
-    val paramStr = params.map { case (k, v) =>
-      val s = v match
-        case sv: String => s"\"$v\""
-        case _ => v.toString
-      s""""$k":$s"""
-    }.mkString(",")
+  def invoke(method: String, params: Map[String, Any]): Response = {
+    Locks.withLock(sendLock) {
+      val id = commandId.getAndIncrement
+      this.lastId = id
+      val paramStr = params.map { case (k, v) =>
+        val s = v match
+          case sv: String => s"\"$v\""
+          case _ => v.toString
+        s""""$k":$s"""
+      }.mkString(",")
 
-    val message = s"""{"id":${id},"method":"${method}","params":{${paramStr}}}"""
-    PdfLogger.debug("send message:" + message)
-    try {
-      res = null
-      session.getBasicRemote.sendText(message)
-      invokeLatch = new CountDownLatch(1)
-      invokeLatch.await()
-    } catch {
-      case e: Throwable =>
-        PdfLogger.error("invoke socket error", e)
-        if null == res then res = Response(Json.emptyObject, e.getMessage)
+      val message = s"""{"id":${id},"method":"${method}","params":{${paramStr}}}"""
+      PdfLogger.debug("send message:" + message)
+      try {
+        res = null
+        session.getBasicRemote.sendText(message)
+        invokeLatch = new CountDownLatch(1)
+        invokeLatch.await()
+      } catch {
+        case e: Throwable =>
+          PdfLogger.error("invoke socket error", e)
+          if null == res then res = Response(Json.emptyObject, e.getMessage)
+      }
+      if null == res then res = Response(Json.emptyObject, "")
+      else if Strings.isNotBlank(res.error) then PdfLogger.error(res.error)
+      res
     }
-    if null == res then res = Response(Json.emptyObject, "")
-    else if Strings.isNotBlank(res.error) then PdfLogger.error(res.error)
-    res
   }
 
   def close(): Unit = {
