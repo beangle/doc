@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.5.2-SNAPSHOT"
+ThisBuild / version := "0.5.2"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,8 +23,8 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.0-SNAPSHOT"
-val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.4-SNAPSHOT"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.0"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.4"
 
 val commonDeps = Seq(slf4j, logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.1"
