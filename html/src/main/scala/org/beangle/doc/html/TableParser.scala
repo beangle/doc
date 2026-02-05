@@ -19,9 +19,9 @@ package org.beangle.doc.html
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.xml.{Node, Document as XDocument}
 
 import java.util.regex.Pattern
-import scala.xml.Node
 
 /** HTML网页table解析
  */
@@ -29,9 +29,8 @@ object TableParser {
 
   private def parseAttributes(elem: Node, node: DomNode): Unit = {
     val props = Collections.newMap[String, String]
-    elem.attributes foreach { n =>
-      val v = n.value.toString()
-      if Strings.isNotEmpty(v) then props.put(n.key.toLowerCase, v.trim)
+    elem.attrs foreach { (k, v) =>
+      if Strings.isNotEmpty(v) then props.put(k, v.trim)
     }
     node.attributes = props.toMap
   }
@@ -64,7 +63,7 @@ object TableParser {
     val document = new Document
 
     val headStr = find(t, "(?ims)<head(.*)</head>").headOption.getOrElse("<head></head>")
-    val headXml = scala.xml.XML.loadString("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + headStr)
+    val headXml = XDocument.parse("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + headStr)
 
     (headXml \\ "title") foreach { title =>
       document.updateTitle(title.text)
@@ -74,7 +73,7 @@ object TableParser {
     bodyStr = Strings.replace(bodyStr, "&nbsp;", "&amp;nbsp;")
     val contents = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" + bodyStr
 
-    val xml = scala.xml.XML.loadString(contents)
+    val xml = XDocument.parse(contents)
     document.styleSheets = new StyleSheets(classStyles.toSeq)
 
     val body = new Dom.Body
@@ -144,7 +143,7 @@ object TableParser {
    * @return
    */
   private def readText(node: Node): String = {
-    var text = node.child.map { c =>
+    var text = node.children.map { c =>
       val cstr = c.text
       if cstr.isEmpty then
         val outerhtml = c.toString

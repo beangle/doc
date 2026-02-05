@@ -21,11 +21,11 @@ import com.sun.jna
 import com.sun.jna.Platform
 import org.beangle.commons.io.{Dirs, Files}
 import org.beangle.commons.lang.SystemInfo
-import org.beangle.commons.logging.Logging
+import org.beangle.doc.pdf.PdfLogger
 
 import java.io.File
 
-class NativeLoader(groupId: String, artifactId: String) extends Logging {
+class NativeLoader(groupId: String, artifactId: String) {
   private val ArtifactHome = groupId + "/" + artifactId
   private val RepositoryHome = SystemInfo.user.home + "/.m2/repository"
 
@@ -75,7 +75,7 @@ class NativeLoader(groupId: String, artifactId: String) extends Logging {
     val dll = find(path, version, clazz)
     val instance = jna.Native.load(dll.getAbsolutePath, clazz)
     instance.init()
-    logger.info(s"Loading ${artifactId} ${instance.version}")
+    PdfLogger.info(s"Loading ${artifactId} ${instance.version}")
     instance
   }
 

@@ -18,10 +18,7 @@
 package org.beangle.doc.pdf
 
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
-import org.beangle.commons.io.Files
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
-import org.beangle.commons.net.http.HttpUtils
 import org.beangle.doc.core.{Orientation, PrintOptions}
 import org.beangle.doc.pdf.cdt.ChromePdfMaker
 import org.beangle.doc.pdf.wk.WKPdfMaker
@@ -41,7 +38,7 @@ object SPDConverter {
   }
 
   def main(args: Array[String]): Unit = {
-    if(args.length<1){
+    if (args.length < 1) {
       println("Usage:SPDConverter some_url or local file")
       return
     }
@@ -55,7 +52,7 @@ object SPDConverter {
 /** Single Page Document
  * 单页面文档的默认打印
  */
-class SPDConverter(pdfMaker: PdfMaker) extends Logging {
+class SPDConverter(pdfMaker: PdfMaker) {
 
   def convert(uri: URI, pdf: File): Boolean = {
     convert(uri, pdf, PrintOptions.defaultOptions)
@@ -64,7 +61,7 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     if (uri.getScheme.equalsIgnoreCase("file")) {
       if (!new File(uri).exists()) {
-        logger.error("Cannot find " + uri + ", conversion aborted!")
+        PdfLogger.error("Cannot find " + uri + ", conversion aborted!")
         return false
       }
     }
@@ -79,13 +76,13 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
     var result = pdfMaker.convert(uri, pdf, options)
     if (result) {
       if (options.shrinkTo1Page && getNumberOfPages(pdf) > 1) {
-        logger.debug("enable smart shrinking")
+        PdfLogger.debug("enable smart shrinking")
         pdf.delete()
         options.shrinkToFit = false
         result = pdfMaker.convert(uri, pdf, options)
         var scale = 0.95d
         while (getNumberOfPages(pdf) > 1 && scale > 0.5) {
-          logger.debug(s"start zooming at ${scale - 0.05}")
+          PdfLogger.debug(s"start zooming at ${scale - 0.05}")
           options.scale = scale
           result = pdfMaker.convert(uri, pdf, options)
           scale -= 0.05
@@ -97,7 +94,7 @@ class SPDConverter(pdfMaker: PdfMaker) extends Logging {
         pdf.delete()
         portrait.renameTo(pdf)
       }
-      logger.debug(s"convert pdf ${pdf.getAbsolutePath}")
+      PdfLogger.debug(s"convert pdf ${pdf.getAbsolutePath}")
     }
     result
   }

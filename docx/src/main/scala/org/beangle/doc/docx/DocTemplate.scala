@@ -23,7 +23,6 @@ import org.beangle.commons.activation.{MediaType, MediaTypes}
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Chars, Strings}
-import org.beangle.commons.logging.Logging
 import org.beangle.template.api.TemplateInterpreter
 import org.beangle.template.freemarker.DefaultTemplateInterpreter
 
@@ -49,7 +48,7 @@ object DocTemplate {
   }
 }
 
-class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultTemplateInterpreter) extends Logging {
+class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultTemplateInterpreter) {
 
   private var imageIndex = 0
 
@@ -148,7 +147,7 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
         }
         val width = toEmu(properties("width"))
         val height = toEmu(properties("height"))
-        val mediaType = MediaTypes.ImagePng
+        val mediaType = MediaTypes.png
         imgs.put(imgName, Picture(new ByteArrayInputStream(Base64.decode(src)), mediaType, generateImgName(mediaType), width, height))
       }
     }

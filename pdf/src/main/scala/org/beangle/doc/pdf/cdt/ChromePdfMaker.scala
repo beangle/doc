@@ -20,9 +20,8 @@ package org.beangle.doc.pdf.cdt
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{Orientation, PrintOptions}
-import org.beangle.doc.pdf.PdfMaker
+import org.beangle.doc.pdf.{PdfLogger, PdfMaker}
 
 import java.io.File
 import java.net.URI
@@ -33,7 +32,7 @@ object ChromePdfMaker {
   }
 }
 
-class ChromePdfMaker extends PdfMaker, Logging {
+class ChromePdfMaker extends PdfMaker {
 
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     val chrome = Chrome.start()
@@ -66,13 +65,12 @@ class ChromePdfMaker extends PdfMaker, Logging {
         Base64.dump(res._1, pdf)
         true
       } else {
-        println(res._2)
-        logger.error(res._2)
+        PdfLogger.error(res._2)
         false
       }
     } catch {
       case e: Throwable =>
-        logger.error("Convert error", e)
+        PdfLogger.error("Convert error", e)
         false
     } finally {
       chrome.exit()

@@ -20,19 +20,19 @@ package org.beangle.doc.pdf.cdt
 import org.beangle.commons.io.IOs
 import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
+import org.beangle.doc.pdf.PdfLogger
 
 import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, URI}
 import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 
-object Chrome extends Logging {
+object Chrome {
 
   def start(headless: Boolean = true): Chrome = {
     val launcher = ChromeLauncher()
     val chrome = launcher.launch(headless)
-    if (logger.isDebugEnabled) logger.debug(chrome.version())
+    PdfLogger.debug(chrome.version())
     chrome
   }
 }
@@ -47,7 +47,7 @@ object Chrome extends Logging {
  * @param port
  * @param maxIdle
  */
-class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2) extends Logging {
+class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2) {
 
   private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxIdle)
 

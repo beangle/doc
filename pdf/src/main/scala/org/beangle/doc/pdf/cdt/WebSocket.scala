@@ -21,7 +21,7 @@ import jakarta.websocket.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
+import org.beangle.doc.pdf.PdfLogger
 import org.beangle.doc.pdf.cdt.WebSocket.Response
 import org.glassfish.tyrus.client.ClientManager
 import org.glassfish.tyrus.container.grizzly.client.GrizzlyClientContainer
@@ -47,7 +47,7 @@ object WebSocket {
   }
 }
 
-class WebSocket(uri: URI) extends Logging {
+class WebSocket(uri: URI) {
 
   private var session: Session = _
 
@@ -69,11 +69,11 @@ class WebSocket(uri: URI) extends Logging {
     val socket = this
     session = WebSocket.client.connectToServer(new Endpoint() {
       override def onOpen(session: Session, config: EndpointConfig): Unit = {
-        logger.debug(s"Connected ${session.getRequestURI}")
+        PdfLogger.debug(s"Connected ${session.getRequestURI}")
       }
 
       override def onClose(session: Session, closeReason: CloseReason): Unit = {
-        logger.debug(s"Connection closed ${closeReason.getReasonPhrase},${uri}")
+        PdfLogger.debug(s"Connection closed ${closeReason.getReasonPhrase},${uri}")
         if (null != invokeLatch) {
           invokeLatch.countDown()
           res = Response(Json.emptyObject, closeReason.getReasonPhrase)
@@ -82,16 +82,16 @@ class WebSocket(uri: URI) extends Logging {
       }
 
       override def onError(session: Session, thr: Throwable): Unit = {
-        logger.error("Error in web socket session.", thr)
+        PdfLogger.error("Error in web socket session.", thr)
         thr.printStackTrace()
       }
     }, uri)
 
     session.addMessageHandler(new MessageHandler.Whole[String]() {
       def onMessage(var1: String): Unit = {
-        if (logger.isDebugEnabled) {
-          if var1.length > 5000 then logger.debug("Receive message " + var1.substring(0, 40))
-          else logger.debug("Receive message " + var1)
+        if (PdfLogger.isDebugEnabled) {
+          if var1.length > 5000 then PdfLogger.debug("Receive message " + var1.substring(0, 40))
+          else PdfLogger.debug("Receive message " + var1)
         }
         val v = Json.parseObject(var1)
         if (v.contains("id")) {
@@ -103,7 +103,7 @@ class WebSocket(uri: URI) extends Logging {
         } else if (v.contains("method")) {
           handlers.get(v.getString("method")) foreach { f => f() }
         } else {
-          logger.error("Ignore event " + var1)
+          PdfLogger.error("Ignore event " + var1)
         }
       }
     })
@@ -112,7 +112,7 @@ class WebSocket(uri: URI) extends Logging {
   def send(method: String): Unit = {
     val id = commandId.getAndIncrement
     val msg = s"""{"id":${id},"method":"${method}"}"""
-    logger.debug("send message:" + msg)
+    PdfLogger.debug("send message:" + msg)
     session.getBasicRemote.sendText(msg)
   }
 
@@ -127,7 +127,7 @@ class WebSocket(uri: URI) extends Logging {
     }.mkString(",")
 
     val message = s"""{"id":${id},"method":"${method}","params":{${paramStr}}}"""
-    logger.debug("send message:" + message)
+    PdfLogger.debug("send message:" + message)
     try {
       res = null
       session.getBasicRemote.sendText(message)
@@ -135,11 +135,11 @@ class WebSocket(uri: URI) extends Logging {
       invokeLatch.await()
     } catch {
       case e: Throwable =>
-        logger.error("invoke socket error", e)
+        PdfLogger.error("invoke socket error", e)
         if null == res then res = Response(Json.emptyObject, e.getMessage)
     }
     if null == res then res = Response(Json.emptyObject, "")
-    else if Strings.isNotBlank(res.error) then logger.error(res.error)
+    else if Strings.isNotBlank(res.error) then PdfLogger.error(res.error)
     res
   }
 

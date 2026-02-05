@@ -19,11 +19,10 @@ package org.beangle.doc.pdf
 
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader, PdfWriter}
 import org.beangle.commons.io.IOs
-import org.beangle.commons.logging.Logging
 
 import java.io.*
 
-object PdfMerger extends Logging {
+object PdfMerger {
   /** pdf合并
    *
    * @return 合并后的pdf的二进制内容
@@ -52,12 +51,12 @@ object PdfMerger extends Logging {
     val ins = filePaths.flatMap { f =>
       if (f.exists()) {
         if (f.length() == 0) {
-          logger.info(s"ignore empty file ${f.getAbsolutePath}")
+          PdfLogger.info(s"ignore empty file ${f.getAbsolutePath}")
           None
         } else if (f.getAbsolutePath.endsWith(".pdf") || f.getAbsolutePath.endsWith(".PDF")) {
           Some(new FileInputStream(f))
         } else {
-          logger.info(s"illegal pdf file ${f.getAbsolutePath}")
+          PdfLogger.info(s"illegal pdf file ${f.getAbsolutePath}")
           None
         }
       } else None

@@ -17,10 +17,9 @@
 
 package org.beangle.doc.pdf.wk
 
-import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.util.NativeLoader
 import org.beangle.doc.core.{ErrorPolicy, PrintOptions}
-import org.beangle.doc.pdf.PdfMaker
+import org.beangle.doc.pdf.{PdfLogger, PdfMaker}
 
 import java.io.File
 import java.net.URI
@@ -36,11 +35,11 @@ object WKPdfMaker {
   }
 }
 
-class WKPdfMaker extends PdfMaker, Logging {
+class WKPdfMaker extends PdfMaker {
 
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     if (pdf.exists() && !pdf.canWrite) {
-      logger.error("Cannot write target pdf " + pdf + ", conversion aborted!")
+      PdfLogger.error("Cannot write target pdf " + pdf + ", conversion aborted!")
       return false
     }
 
@@ -76,7 +75,7 @@ class WKPdfMaker extends PdfMaker, Logging {
     if (java.lang.Double.compare(options.scale, 1.0d) != 0) {
       page.set(ObjectSettings.ZoomFactor, String.valueOf(options.scale))
     }
-    htmltopdf.error(logger.error(_))
+    htmltopdf.error(PdfLogger.error(_))
     htmltopdf.saveAs(pdf)
   }
 

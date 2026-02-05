@@ -18,14 +18,13 @@
 package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.lang.Processes
-import org.beangle.commons.logging.Logging
 import org.beangle.doc.pdf.cdt.ChromeLauncher.{Arguments, Configuration}
 
 import java.io.IOException
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.{Files, Path, Paths}
 import java.util
-import java.util.regex.{Matcher, Pattern}
+import java.util.regex.Pattern
 import scala.collection.mutable
 
 object ChromeLauncher {
@@ -170,7 +169,7 @@ object ChromeLauncher {
   }
 }
 
-class ChromeLauncher(config: Configuration) extends Logging {
+class ChromeLauncher(config: Configuration) {
   private var chromeProcess: Process = _
 
   private var userDataDirPath: Path = _

@@ -17,9 +17,9 @@
 
 package org.beangle.doc.office
 
-import org.beangle.commons.logging.Logging
 import org.beangle.commons.net.Networks
 import org.beangle.commons.os.{LinuxBash, Platform, WinCmd}
+import org.beangle.doc.pdf.PdfLogger
 import org.jodconverter.local.office.LocalOfficeManager
 
 import java.nio.file.Path
@@ -60,14 +60,14 @@ object LibreOfficeLauncher {
 
 import org.beangle.doc.office.LibreOfficeLauncher.*
 
-class LibreOfficeLauncher(cfg: Configuration) extends Logging {
+class LibreOfficeLauncher(cfg: Configuration) {
 
   def launch(processCount: Int = 1): LocalOfficeManager = {
     require(processCount >= 1 && processCount <= 20, "processCount should great than 0 and less than 20")
     val path = findSoffice().getOrElse(throw new RuntimeException("Cannot find LibreOffice execute file."))
     val home = path.getParent.getParent
     if (killOffice()) {
-      logger.info("Autokill running libreoffice process")
+      PdfLogger.info("Autokill running libreoffice process")
     }
     val builder = LocalOfficeManager.builder.officeHome(home.toFile)
       .pipeNames(cfg.pipeNames: _*)
