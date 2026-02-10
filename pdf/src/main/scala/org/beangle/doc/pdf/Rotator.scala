@@ -22,21 +22,9 @@ import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader, PdfWriter}
 import java.io.File
 
 object Rotator {
+  @deprecated("using Files", "0.5.3")
   def rotate(in: File, out: File, degree: Int): Unit = {
-    val originDoc = new PdfDocument(new PdfReader(in))
-    val writer = new PdfWriter(out)
-    val newDoc = new PdfDocument(writer)
-    val pageCount = originDoc.getNumberOfPages
-    originDoc.copyPagesTo(1, pageCount, newDoc)
-    var i = 1
-    while (i <= pageCount) {
-      val page = newDoc.getPage(i)
-      page.setRotation(degree)
-      i += 1
-    }
-    originDoc.close()
-    newDoc.close()
-    writer.close()
+    Docs.rotate(in, out, degree)
   }
 
 }

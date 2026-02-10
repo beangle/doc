@@ -17,29 +17,15 @@
 
 package org.beangle.doc.pdf
 
-import com.itextpdf.io.source.ByteUtils
 import com.itextpdf.kernel.pdf.*
-import org.beangle.commons.io.Files
 
-import java.io.{File, FileOutputStream}
+import java.io.File
 
 object Encryptor {
 
-  def encrypt(pdf: File, userPassword: Option[String], ownerPassword: String, permission: Int = EncryptionConstants.ALLOW_PRINTING): Unit = {
-    if (!pdf.exists() || pdf.isDirectory) return
-
-    val reader = new PdfReader(pdf)
-    reader.setCloseStream(true)
-    val encrypted = File.createTempFile("encrypt", ".pdf")
-    val properties = new EncryptionProperties
-    properties.setStandardEncryption(ByteUtils.getIsoBytes(userPassword.orNull),
-      ByteUtils.getIsoBytes(ownerPassword), permission, EncryptionConstants.STANDARD_ENCRYPTION_128)
-
-    val os = new FileOutputStream(encrypted)
-    PdfEncryptor.encrypt(reader, os, properties)
-    os.close()
-    reader.close()
-    Files.copy(encrypted, pdf)
-    encrypted.delete()
+  @deprecated("using Files", "0.5.3")
+  def encrypt(pdf: File, userPassword: Option[String], ownerPassword: String,
+              permission: Int = EncryptionConstants.ALLOW_PRINTING): Unit = {
+    Docs.encrypt(pdf, userPassword, ownerPassword, permission)
   }
 }

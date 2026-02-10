@@ -17,22 +17,28 @@
 
 package org.beangle.doc.office
 
-import org.beangle.commons.lang.time.Stopwatch
+import org.beangle.commons.io.Dirs
+import org.beangle.commons.io.Files./
+import org.beangle.commons.lang.Strings
 
 import java.io.File
 
 object ConvertTest {
 
   def main(args: Array[String]): Unit = {
-    val inputFile = new File("C:\\Users\\duantihua\\Desktop\\2023年度在线辅修系统功能开发合同.docx")
-    val outputFile = new File("C:\\Users\\duantihua\\Desktop\\test.pdf")
-    if (inputFile.exists()) {
-      val watch = new Stopwatch(true)
-      val converter = new LibreOfficeConverter()
-      converter.init()
-      converter.convertToPdf(inputFile, outputFile)
-      converter.destroy()
-      println(s"convert using ${watch}")
+    val srcDir = "D:\\tmp\\2016"
+    val converter = new LibreOfficeConverter()
+    converter.init()
+    Dirs.on(srcDir).ls() foreach { n =>
+      val file = new File(srcDir + / + n)
+      if (file.isFile && (n.endsWith(".doc") || n.endsWith(".docx"))) {
+        val outfile = Strings.substringBeforeLast(n, ".").toUpperCase() + ".pdf"
+        println(s"converting to ${outfile}")
+        converter.convertToPdf(file, new File(srcDir + / + outfile))
+      }
     }
+    converter.destroy()
   }
+
+
 }

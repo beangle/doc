@@ -26,21 +26,9 @@ import java.io.*
  */
 object PdfSpliter {
 
+  @deprecated("using Files", "0.5.3")
   def split(input: InputStream, save: Array[Byte] => Unit): Unit = {
-    val srcDoc = new PdfDocument(new PdfReader(input))
-    try {
-      val totalPages = srcDoc.getNumberOfPages
-      for (pageNum <- 1 to totalPages) {
-        val bos = new ByteArrayOutputStream()
-        val writer = new PdfWriter(bos)
-        val targetDoc = new PdfDocument(writer)
-        srcDoc.copyPagesTo(pageNum, pageNum, targetDoc)
-        targetDoc.close()
-        save(bos.toByteArray)
-      }
-    } finally {
-      IOs.close(srcDoc)
-    }
+    Docs.split(input, save)
   }
 
 }

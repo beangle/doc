@@ -27,51 +27,13 @@ object PdfMerger {
    *
    * @return 合并后的pdf的二进制内容
    * */
+  @deprecated("using Files", "0.5.3")
   def merge(ins: Seq[InputStream], bos: OutputStream): Unit = {
-    // 创建一个新的PDF
-    val writer = new PdfWriter(bos)
-    val document = new PdfDocument(writer)
-    ins foreach { is =>
-      val bytes = IOs.readBytes(is)
-      if (bytes.length > 0) {
-        val reader = new PdfReader(new ByteArrayInputStream(bytes))
-        val originDoc = new PdfDocument(reader)
-        val pageCount = originDoc.getNumberOfPages
-        val pages = originDoc.copyPagesTo(1, pageCount, document).iterator()
-        while (pages.hasNext) {
-          pages.next().flush()
-        }
-        originDoc.close()
-      }
-    }
-    document.close()
+    Docs.merge(ins, bos)
   }
 
+  @deprecated("using Files", "0.5.3")
   def mergeFiles(filePaths: collection.Seq[File], target: File): Unit = {
-    val ins = filePaths.flatMap { f =>
-      if (f.exists()) {
-        if (f.length() == 0) {
-          PdfLogger.info(s"ignore empty file ${f.getAbsolutePath}")
-          None
-        } else if (f.getAbsolutePath.endsWith(".pdf") || f.getAbsolutePath.endsWith(".PDF")) {
-          Some(new FileInputStream(f))
-        } else {
-          PdfLogger.info(s"illegal pdf file ${f.getAbsolutePath}")
-          None
-        }
-      } else None
-    }.toSeq
-    val part = new File(target.getAbsolutePath + ".part")
-    var os: OutputStream = null
-    try {
-      os = new FileOutputStream(part)
-      merge(ins, os)
-      os.close()
-      if target.exists() then target.delete()
-      part.renameTo(target)
-    } finally {
-      IOs.close(os)
-      if (part.exists()) part.delete()
-    }
+    Docs.merge(filePaths, target)
   }
 }

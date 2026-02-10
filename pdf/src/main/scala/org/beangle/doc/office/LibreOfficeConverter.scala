@@ -34,7 +34,7 @@ class LibreOfficeConverter extends Initializing, Disposable {
 
   def convertToPdf(input: File, output: File): Unit = {
     val builder = LocalConverter.builder()
-    builder.build.convert(input).to(output).as(DefaultDocumentFormatRegistry.PDF).execute()
+    builder.build().convert(input).to(output).as(DefaultDocumentFormatRegistry.PDF).execute()
   }
 
   override def destroy(): Unit = {

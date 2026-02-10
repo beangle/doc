@@ -17,29 +17,32 @@
 
 package org.beangle.doc.pdf
 
-import com.itextpdf.io.image.ImageDataFactory
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
-import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader, PdfWriter}
-import com.itextpdf.layout.Canvas
-import com.itextpdf.layout.element.Image
+import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy
+import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
+import org.beangle.commons.io.Dirs
+import org.beangle.commons.io.Files./
+import org.beangle.commons.lang.Strings
 
-import java.io.{ByteArrayInputStream, FileInputStream, FileOutputStream}
+import java.io.{ByteArrayInputStream, File, FileInputStream, FileOutputStream}
 import scala.util.Using
 import scala.util.matching.Regex
 
-class PdfSplitTest {
+object PdfSplitTest {
 
-  def main(args: Array[String]): Unit = {
-    val n = new FileInputStream("D:\\tmp\\成绩单.pdf")
+  def split(file: File, targetDir: File): Unit = {
+    targetDir.mkdirs()
+    println("split file " + file.getAbsolutePath)
+    val n = new FileInputStream(file)
     var i: Int = 0
-    val nameRegex: Regex = """学生姓名:(.+?)(?=\s|，|。|、|\n|$)""".r
+    val nameRegex: Regex = """学生姓名:(.+?)(?=，|。|、|\n|学号|$)""".r
     val codeRegex: Regex = """学号:(.+?)(?=\s|，|。|、|\n|$)""".r
 
     PdfSpliter.split(n, save = bytes => {
       i += 1
       val doc = new PdfDocument(new PdfReader(new ByteArrayInputStream(bytes)))
-      val pageText = PdfTextExtractor.getTextFromPage(doc.getPage(1))
+      val pageText = PdfTextExtractor.getTextFromPage(doc.getPage(1), new SimpleTextExtractionStrategy)
+
       val nameMatches = nameRegex.findAllMatchIn(pageText)
       var code: String = ""
       var name: String = ""
@@ -47,6 +50,7 @@ class PdfSplitTest {
         val n = m.group(1).trim // 去除前后空格
         if n.nonEmpty then name = n
       }
+      name = Strings.replace(name, " ", "")
       val codeMatches = codeRegex.findAllMatchIn(pageText)
       codeMatches.foreach { m =>
         val c = m.group(1).trim // 去除前后空格
@@ -54,29 +58,24 @@ class PdfSplitTest {
       }
       doc.close()
       var fileName: String = null
-      fileName = "D:\\tmp\\parts\\" + code + " " + name + ".pdf"
+      fileName = targetDir.getAbsolutePath + / + code + " " + name + ".pdf"
+      println(s"writing ${fileName}")
       Using(new FileOutputStream(fileName)) { f =>
         f.write(bytes)
       }
-
-      val newDoc = new PdfDocument(new PdfReader(new ByteArrayInputStream(bytes)), new PdfWriter(new FileOutputStream(fileName)))
-      val firstPage = newDoc.getPage(1)
-      val width = firstPage.getPageSize.getWidth
-      val height = firstPage.getPageSize.getHeight
-      val stampX = width - 260 - 20
-      val stampY = 25f
-      val imageData = ImageDataFactory.create("d:\\signature.png")
-      val stampImage = new Image(imageData)
-        .setWidth(108f)
-        .setHeight(108f)
-
-      val pdfCanvas = new PdfCanvas(firstPage)
-      val canvas = new Canvas(pdfCanvas, firstPage.getPageSize)
-      stampImage.setFixedPosition(stampX, stampY)
-      canvas.add(stampImage)
-      canvas.close()
-      pdfCanvas.release()
-      newDoc.close()
     })
   }
+
+  def main(args: Array[String]): Unit = {
+    val srcDir = "D:\\tmp\\历年成绩单"
+    val targetDir = new File("D:\\tmp" + / + "transcripts")
+
+    Dirs.on(srcDir).ls() foreach { n =>
+      val file = new File(srcDir + / + n)
+      if (n.startsWith("2015") && file.isFile) {
+        split(file, targetDir)
+      }
+    }
+  }
+
 }

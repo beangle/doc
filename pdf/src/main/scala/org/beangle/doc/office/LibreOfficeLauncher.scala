@@ -34,7 +34,7 @@ object LibreOfficeLauncher {
     var pipeNames: Array[String] = Array.empty
     var processTimeout: Duration = Duration.ofMinutes(2) //2m
     var taskTimeout: Duration = Duration.ofMinutes(5) //5m
-    var maxTaskPerProcess: Int = 5
+    var maxTaskPerProcess: Int = 50
   }
 
   def findSoffice(): Option[Path] = {
