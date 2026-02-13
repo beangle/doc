@@ -22,7 +22,7 @@ import java.io.File
 object RotationTest {
 
   def main(args: Array[String]): Unit = {
-    Rotator.rotate(new File("target/temp0.pdf"), new File("target/temp0_90.pdf"), -90)
-    Encryptor.encrypt(new File("target/temp0.pdf"), Some("123"), "abc")
+    Docs.rotate(new File("target/temp0.pdf"), new File("target/temp0_90.pdf"), -90)
+    Docs.encrypt(new File("target/temp0.pdf"), Some("123"), "abc")
   }
 }

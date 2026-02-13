@@ -90,7 +90,7 @@ class SPDConverter(pdfMaker: PdfMaker) {
       }
       if (result && options.orientation == Orientation.Landscape) {
         val portrait = new File(pdf.getParent + File.separator + Strings.replace(pdf.getName, ".pdf", ".portrait.pdf"))
-        Rotator.rotate(pdf, portrait, -90)
+        Docs.rotate(pdf, portrait, -90)
         pdf.delete()
         portrait.renameTo(pdf)
       }

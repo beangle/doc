@@ -40,5 +40,4 @@ object ConvertTest {
     converter.destroy()
   }
 
-
 }

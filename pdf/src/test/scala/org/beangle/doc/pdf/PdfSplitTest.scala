@@ -33,12 +33,12 @@ object PdfSplitTest {
   def split(file: File, targetDir: File): Unit = {
     targetDir.mkdirs()
     println("split file " + file.getAbsolutePath)
-    val n = new FileInputStream(file)
+    val n = file
     var i: Int = 0
     val nameRegex: Regex = """学生姓名:(.+?)(?=，|。|、|\n|学号|$)""".r
     val codeRegex: Regex = """学号:(.+?)(?=\s|，|。|、|\n|$)""".r
 
-    PdfSpliter.split(n, save = bytes => {
+    Docs.split(n) { bytes =>
       i += 1
       val doc = new PdfDocument(new PdfReader(new ByteArrayInputStream(bytes)))
       val pageText = PdfTextExtractor.getTextFromPage(doc.getPage(1), new SimpleTextExtractionStrategy)
@@ -63,7 +63,7 @@ object PdfSplitTest {
       Using(new FileOutputStream(fileName)) { f =>
         f.write(bytes)
       }
-    })
+    }
   }
 
   def main(args: Array[String]): Unit = {

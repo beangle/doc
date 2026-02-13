@@ -19,4 +19,4 @@ package org.beangle.doc.excel
 
 import org.beangle.commons.logging.{Logger, slf4j}
 
-object ExcelLogger extends Logger(slf4j("org.beangle.doc.excel"))
+private[excel] object ExcelLogger extends Logger(slf4j("org.beangle.doc.excel"))
