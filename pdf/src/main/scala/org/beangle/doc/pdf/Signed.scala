@@ -17,10 +17,12 @@
 
 package org.beangle.doc.pdf
 
-import com.itextpdf.kernel.pdf.*
 import com.itextpdf.forms.PdfAcroForm
+import com.itextpdf.kernel.pdf.*
+import com.itextpdf.signatures.{PdfSignature, SignatureUtil}
 
 import java.io.*
+import java.time.Instant
 import scala.jdk.CollectionConverters.*
 
 object Signed {
@@ -53,6 +55,83 @@ object Signed {
       }
 
       hasCatalogSig || hasFormSigField || hasPageSigAnnot
+    } finally {
+      pdfDoc.close()
+      reader.close()
+    }
+  }
+
+  /** 获取 PDF 文档中所有签名的详细信息
+   *
+   * @param input PDF 文件
+   * @return 各签名的详细信息（签名字段名、签名时间、签名者、原因、位置、联系信息、证书主题）
+   */
+  def getSignatureInfos(input: File): Seq[SignatureInfo] = {
+    if (!input.exists() || input.isDirectory) return Seq.empty
+    val reader = new PdfReader(input)
+    val pdfDoc = new PdfDocument(reader)
+    try {
+      val sigUtil = new SignatureUtil(pdfDoc)
+      val names = sigUtil.getSignatureNames.asScala
+      names.flatMap { name =>
+        try {
+          val pkcs7 = sigUtil.readSignatureData(name)
+          val date = Option(pkcs7.getTimeStampDate).getOrElse(pkcs7.getSignDate)
+          val signTime = Option(date).map(_.toInstant).getOrElse(Instant.EPOCH)
+
+          val sigDict = sigUtil.getSignatureDictionary(name)
+          val pdfSig = Option(sigDict).map(new PdfSignature(_))
+          val signerName = pdfSig.flatMap(s => Option(s.getName)).filter(_.nonEmpty)
+          val reason = pdfSig.flatMap(s => Option(s.getReason)).filter(_.nonEmpty)
+          val location = pdfSig.flatMap(s => Option(s.getLocation)).filter(_.nonEmpty)
+          val contactInfo = Option(sigDict)
+            .filter(_.containsKey(PdfName.ContactInfo))
+            .flatMap(d => Option(d.getAsString(PdfName.ContactInfo)))
+            .map(_.toUnicodeString)
+            .filter(_.nonEmpty)
+          val certificateSubject = Option(pkcs7.getSigningCertificate)
+            .map(_.getSubjectX500Principal.getName)
+
+          Some(SignatureInfo(
+            fieldName = name,
+            signTime = signTime,
+            signerName = signerName,
+            reason = reason,
+            location = location,
+            contactInfo = contactInfo,
+            certificateSubject = certificateSubject
+          ))
+        } catch {
+          case _: Exception => None
+        }
+      }.toSeq
+    } finally {
+      pdfDoc.close()
+      reader.close()
+    }
+  }
+
+  /** 获取 PDF 文档中所有签名的 signing 时间
+   *
+   * @param input PDF 文件
+   * @return 各签名的 signing 时间，优先使用时间戳（若存在），否则使用 signing 证书中的时间
+   */
+  def getSignatureTimes(input: File): Seq[Instant] = {
+    if (!input.exists() || input.isDirectory) return Seq.empty
+    val reader = new PdfReader(input)
+    val pdfDoc = new PdfDocument(reader)
+    try {
+      val sigUtil = new SignatureUtil(pdfDoc)
+      val names = sigUtil.getSignatureNames.asScala
+      names.flatMap { name =>
+        try {
+          val pkcs7 = sigUtil.readSignatureData(name)
+          val date = Option(pkcs7.getTimeStampDate).getOrElse(pkcs7.getSignDate)
+          Option(date).map(_.toInstant)
+        } catch {
+          case _: Exception => None
+        }
+      }.toSeq
     } finally {
       pdfDoc.close()
       reader.close()
@@ -118,4 +197,24 @@ object Signed {
       baos.close()
     }
   }
+
+  /** 签名详细信息
+   *
+   * @param fieldName          签名字段名
+   * @param signTime           签名时间
+   * @param signerName         签名者姓名（来自 /Name，可为空）
+   * @param reason             签名原因（为何签，可为空）
+   * @param location           签名位置（可为空）
+   * @param contactInfo        联系信息（可为空）
+   * @param certificateSubject 证书主题 DN（来自 signing 证书，可为空）
+   */
+  case class SignatureInfo(
+                            fieldName: String,
+                            signTime: Instant,
+                            signerName: Option[String] = None,
+                            reason: Option[String] = None,
+                            location: Option[String] = None,
+                            contactInfo: Option[String] = None,
+                            certificateSubject: Option[String] = None
+                          )
 }

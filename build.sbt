@@ -29,6 +29,7 @@ val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.5"
 val commonDeps = Seq(slf4j, logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.1"
 val itext_forms = "com.itextpdf" % "forms" % "9.5.0"
+val itext_sign = "com.itextpdf" % "sign" % "9.5.0"
 
 lazy val root = (project in file("."))
   .settings(common)
@@ -63,7 +64,7 @@ lazy val pdf = (project in file("pdf"))
     common,
     Compile / mainClass := Some("org.beangle.doc.pdf.SPDConverter"),
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(itext_kernel, itext_layout, itext_forms, itext_bouncy_castle_adapter, jna),
+    libraryDependencies ++= Seq(itext_kernel, itext_layout, itext_forms, itext_sign, itext_bouncy_castle_adapter, jna),
     libraryDependencies ++= Seq(websocket_tyrus_client, jodconverter_local % "optional", libreoffice % "optional")
   )
 publish / skip := true

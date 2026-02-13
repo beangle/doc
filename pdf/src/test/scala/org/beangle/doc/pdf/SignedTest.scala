@@ -33,9 +33,35 @@ class SignedTest extends AnyFunSpec with Matchers {
       Signed.hasSignature(origin) should be(false)
     }
 
+    it("getSignatureTimes returns empty for PDF without signatures") {
+      val origin = resourceFile("origin.pdf")
+      Signed.getSignatureTimes(origin) should be(empty)
+    }
+
+    it("getSignatureInfos returns empty for PDF without signatures") {
+      val origin = resourceFile("origin.pdf")
+      Signed.getSignatureInfos(origin) should be(empty)
+    }
+
     it("hasSignature returns true for PDF with signatures") {
       val signed = resourceFile("signed.pdf")
       Signed.hasSignature(signed) should be(true)
+    }
+
+    it("getSignatureTimes returns signing times for signed PDF") {
+      val signed = resourceFile("signed.pdf")
+      val times = Signed.getSignatureTimes(signed)
+      times should not be empty
+    }
+
+    it("getSignatureInfos returns detailed info for signed PDF") {
+      val signed = resourceFile("signed.pdf")
+      val infos = Signed.getSignatureInfos(signed)
+      infos should not be empty
+      infos.foreach { info =>
+        info.fieldName should not be empty
+        info.signTime should not be null
+      }
     }
 
     it("removeAllSignatures removes all signatures") {
