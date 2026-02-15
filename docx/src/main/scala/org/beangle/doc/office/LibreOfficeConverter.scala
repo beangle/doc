@@ -18,17 +18,24 @@
 package org.beangle.doc.office
 
 import org.beangle.commons.bean.{Disposable, Initializing}
+import org.beangle.doc.office.LibreOfficeLauncher.Configuration
 import org.jodconverter.core.document.DefaultDocumentFormatRegistry
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
 import org.jodconverter.local.LocalConverter
 
 import java.io.File
 
+/** 利用LibreOffice转换docx到pdf
+ */
 class LibreOfficeConverter extends Initializing, Disposable {
   var processCount: Int = 1
+  var maxTaskPerProcess: Int = 50
 
   override def init(): Unit = {
-    val manager = LibreOfficeLauncher().launch(processCount)
+    val cfg = new Configuration
+    cfg.maxTaskPerProcess = maxTaskPerProcess
+    val launcher = new LibreOfficeLauncher(cfg)
+    val manager = launcher.launch(processCount)
     InstalledOfficeManagerHolder.setInstance(manager)
   }
 

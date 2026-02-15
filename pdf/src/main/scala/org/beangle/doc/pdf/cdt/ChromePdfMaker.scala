@@ -21,7 +21,7 @@ import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.core.{Orientation, PrintOptions}
-import org.beangle.doc.pdf.{PdfLogger, PdfMaker}
+import org.beangle.doc.pdf.{Logger, PdfMaker}
 
 import java.io.File
 import java.net.URI
@@ -65,12 +65,12 @@ class ChromePdfMaker extends PdfMaker {
         Base64.dump(res._1, pdf)
         true
       } else {
-        PdfLogger.error(res._2)
+        Logger.error(res._2)
         false
       }
     } catch {
       case e: Throwable =>
-        PdfLogger.error("Convert error", e)
+        Logger.error("Convert error", e)
         false
     } finally {
       chrome.exit()

@@ -19,16 +19,12 @@ package org.beangle.doc.office
 
 import org.beangle.commons.net.Networks
 import org.beangle.commons.os.{LinuxBash, Platform, WinCmd}
-import org.beangle.doc.pdf.PdfLogger
 import org.jodconverter.local.office.LocalOfficeManager
 
 import java.nio.file.Path
 import java.time.Duration
 
 object LibreOfficeLauncher {
-  def apply(): LibreOfficeLauncher = {
-    new LibreOfficeLauncher(new Configuration)
-  }
 
   class Configuration {
     var pipeNames: Array[String] = Array.empty
@@ -66,9 +62,7 @@ class LibreOfficeLauncher(cfg: Configuration) {
     require(processCount >= 1 && processCount <= 20, "processCount should great than 0 and less than 20")
     val path = findSoffice().getOrElse(throw new RuntimeException("Cannot find LibreOffice execute file."))
     val home = path.getParent.getParent
-    if (killOffice()) {
-      PdfLogger.info("Autokill running libreoffice process")
-    }
+    killOffice()
     val builder = LocalOfficeManager.builder.officeHome(home.toFile)
       .pipeNames(cfg.pipeNames: _*)
       .processTimeout(cfg.processTimeout.toMillis)

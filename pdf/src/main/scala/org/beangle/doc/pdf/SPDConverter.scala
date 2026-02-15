@@ -61,7 +61,7 @@ class SPDConverter(pdfMaker: PdfMaker) {
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     if (uri.getScheme.equalsIgnoreCase("file")) {
       if (!new File(uri).exists()) {
-        PdfLogger.error("Cannot find " + uri + ", conversion aborted!")
+        Logger.error("Cannot find " + uri + ", conversion aborted!")
         return false
       }
     }
@@ -76,13 +76,13 @@ class SPDConverter(pdfMaker: PdfMaker) {
     var result = pdfMaker.convert(uri, pdf, options)
     if (result) {
       if (options.shrinkTo1Page && getNumberOfPages(pdf) > 1) {
-        PdfLogger.debug("enable smart shrinking")
+        Logger.debug("enable smart shrinking")
         pdf.delete()
         options.shrinkToFit = false
         result = pdfMaker.convert(uri, pdf, options)
         var scale = 0.95d
         while (getNumberOfPages(pdf) > 1 && scale > 0.5) {
-          PdfLogger.debug(s"start zooming at ${scale - 0.05}")
+          Logger.debug(s"start zooming at ${scale - 0.05}")
           options.scale = scale
           result = pdfMaker.convert(uri, pdf, options)
           scale -= 0.05
@@ -94,7 +94,7 @@ class SPDConverter(pdfMaker: PdfMaker) {
         pdf.delete()
         portrait.renameTo(pdf)
       }
-      PdfLogger.debug(s"convert pdf ${pdf.getAbsolutePath}")
+      Logger.debug(s"convert pdf ${pdf.getAbsolutePath}")
     }
     result
   }

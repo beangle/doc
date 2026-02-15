@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
 ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.5.3-SNAPSHOT"
+ThisBuild / version := "0.5.3"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -23,7 +23,7 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.5"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.6"
 val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.5"
 
 val commonDeps = Seq(slf4j, logback_classic % "test", beangle_commons, scalatest)
@@ -47,7 +47,8 @@ lazy val docx = (project in file("docx"))
     name := "beangle-doc-docx",
     common,
     libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker, log4j_to_slf4j)
+    libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker, log4j_to_slf4j),
+    libraryDependencies ++= Seq(jodconverter_local % "optional", libreoffice % "optional")
   ).dependsOn(html)
 
 lazy val excel = (project in file("excel"))
@@ -65,6 +66,6 @@ lazy val pdf = (project in file("pdf"))
     Compile / mainClass := Some("org.beangle.doc.pdf.SPDConverter"),
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(itext_kernel, itext_layout, itext_forms, itext_sign, itext_bouncy_castle_adapter, jna),
-    libraryDependencies ++= Seq(websocket_tyrus_client, jodconverter_local % "optional", libreoffice % "optional")
+    libraryDependencies ++= Seq(websocket_tyrus_client)
   )
 publish / skip := true

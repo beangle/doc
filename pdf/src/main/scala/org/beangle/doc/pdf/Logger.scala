@@ -17,6 +17,6 @@
 
 package org.beangle.doc.pdf
 
-import org.beangle.commons.logging.{Logger, slf4j}
+import org.beangle.commons.logging.{Logger as CLogger, slf4j}
 
-object PdfLogger extends Logger(slf4j("org.beangle.doc.pdf"))
+private[pdf] object Logger extends CLogger(slf4j("org.beangle.doc.pdf"))

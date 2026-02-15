@@ -21,7 +21,7 @@ import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.io.IOs
 import org.beangle.commons.json.Json
 import org.beangle.commons.lang.Strings
-import org.beangle.doc.pdf.PdfLogger
+import org.beangle.doc.pdf.Logger
 
 import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, URI}
@@ -34,7 +34,7 @@ object Chrome {
   def start(headless: Boolean = true): Chrome = {
     val launcher = ChromeLauncher()
     val chrome = launcher.launch(headless)
-    PdfLogger.debug(chrome.version())
+    Logger.debug(chrome.version())
     chrome
   }
 }

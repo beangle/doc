@@ -110,12 +110,12 @@ object Docs {
     val ins = files.flatMap { f =>
       if (f.exists()) {
         if (f.length() == 0) {
-          PdfLogger.info(s"ignore empty file ${f.getAbsolutePath}")
+          Logger.info(s"ignore empty file ${f.getAbsolutePath}")
           None
         } else if (f.getAbsolutePath.endsWith(".pdf") || f.getAbsolutePath.endsWith(".PDF")) {
           Some(new FileInputStream(f))
         } else {
-          PdfLogger.info(s"illegal pdf file ${f.getAbsolutePath}")
+          Logger.info(s"illegal pdf file ${f.getAbsolutePath}")
           None
         }
       } else None
