@@ -23,8 +23,8 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Doc Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.6"
-val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.5"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.1.2"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.6"
 
 val commonDeps = Seq(slf4j, logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.1"
