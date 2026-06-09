@@ -44,12 +44,12 @@ class PrintOptions {
   /** 是否打印页眉页脚 */
   var printHeaderFooter: Boolean = _
   /** 打印拷贝数 */
-  var copys: Int = 1
+  var copies: Int = 1
   /** 打印范围，例如1-5, 8, 11-13 */
   var pageRanges: Option[String] = None
   /** 是否缩小到一页 */
   var shrinkTo1Page: Boolean = false
-  /** 页面 load 后额外等待渲染的时间，用于 JS 动态页面 */
+  /** 页面 load 后等待内容渲染的最长时间，用于 JS 动态页面 */
   var renderDelay: Duration = Duration.ZERO
 }
 

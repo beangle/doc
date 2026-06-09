@@ -39,14 +39,14 @@ import scala.collection.mutable
  */
 class ExcelSchema {
 
-  def createScheet(name: String = ""): ExcelScheet = {
+  def createSheet(name: String = ""): ExcelSheet = {
     val sheetName =
       if (Strings.isBlank(name)) {
         "Sheet" + (sheets.size + 1)
       } else {
         name
       }
-    val sheet = new ExcelScheet(sheetName)
+    val sheet = new ExcelSheet(sheetName)
     sheets += sheet
     sheet
   }
@@ -55,7 +55,7 @@ class ExcelSchema {
     val template = sheets.head
     val hasRefs = template.columns.exists(c => null != c.refs && c.refs.nonEmpty)
     if (hasRefs) {
-      val refSheet = createScheet("参考数据")
+      val refSheet = createSheet("参考数据")
       template.columns foreach { c =>
         if (null != c.refs && c.refs.nonEmpty) {
           refSheet.add(c.name).data(c.refs)
@@ -65,10 +65,10 @@ class ExcelSchema {
     ExcelSchemaWriter.generate(this, os)
   }
 
-  val sheets: mutable.Buffer[ExcelScheet] = Collections.newBuffer[ExcelScheet]
+  val sheets: mutable.Buffer[ExcelSheet] = Collections.newBuffer[ExcelSheet]
 }
 
-class ExcelScheet(var name: String) {
+class ExcelSheet(var name: String) {
 
   var title: Option[String] = None
   var remark: Option[String] = None
@@ -174,7 +174,7 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def datatime(): this.type = {
+  def datetime(): this.type = {
     isDate = true
     this.dataType = DataType.DateTime
     this.format = Some("yyyy-MM-dd HH:mm:ss")
