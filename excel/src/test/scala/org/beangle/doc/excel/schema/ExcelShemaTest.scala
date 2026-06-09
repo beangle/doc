@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import java.io.{File, FileOutputStream}
 import java.time.YearMonth
 
-class ExcelSchemaTest extends AnyFunSpec with Matchers {
+class ExcelShemaTest extends AnyFunSpec with Matchers {
 
   private val genderNames = List("男", "女")
   private val idTypeNames = List("中华人民共和国居民身份证", "护照")
@@ -32,7 +32,7 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
     it("Generator") {
       val file = File.createTempFile("template", ".xlsx")
       val schema = new ExcelSchema()
-      val sheet = schema.createScheet("数据模板")
+      val sheet = schema.createSheet("数据模板")
       sheet.title("人员信息模板")
       sheet.remark("特别说明：\r\n1、不可改变本表格的行列结构以及批注，否则将会导入失败！\n2、必须按照规格说明的格式填写。\n3、可以多次导入，重复的信息会被新数据更新覆盖。\n4、保存的excel文件名称可以自定。")
       sheet.add("姓名", "name").length(32).required().remark("≤32位")
@@ -42,7 +42,7 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
       sheet.add("工资", "salary").decimal("#,##0.00")
       sheet.add("出生日期", "birthday").date()
       sheet.add("出生年月", "birthYearMonth").yearMonth()
-      sheet.add("出生日期时间", "birthDatetime").datatime()
+      sheet.add("出生日期时间", "birthDatetime").datetime()
       sheet.add("出生时间", "birthTime").time().min("08:00:00").max("12:00:00")
       sheet.add("是否高管", "is_manager").bool()
       sheet.add("联系地址", "address").length(100)
