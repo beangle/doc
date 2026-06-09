@@ -27,7 +27,7 @@ object ObjectSettings {
   val LoadImages = "web.loadImages"
   val EnableJavascript = "web.enableJavascript"
   val EnableIntelligentShrinking = "web.enableIntelligentShrinking"
-  val MminimumFontSize = "web.minimumFontSize"
+  val MinimumFontSize = "web.minimumFontSize"
   val UsePrintMediaType = "web.printMediaType"
   val DefaultEncoding = "web.defaultEncoding"
   val UserStyleSheet = "web.userStyleSheet"
@@ -65,7 +65,7 @@ object ObjectSettings {
   val Page = "page"
 
   private val SettingNames = Set(Background, LoadImages, EnableJavascript, EnableIntelligentShrinking,
-    MminimumFontSize, UsePrintMediaType, DefaultEncoding, UserStyleSheet, AuthUsername, AuthPassword,
+    MinimumFontSize, UsePrintMediaType, DefaultEncoding, UserStyleSheet, AuthUsername, AuthPassword,
     JavascriptDelay, ZoomFactor, BlockLocalFileAccess, StopSlowScript, DebugJavascript, LoadErrorHandling,
 
     HeaderFontSize, HeaderFontName, HeaderLine, HeaderSpacing, HeaderHtmlUrl, HeaderLeft,
