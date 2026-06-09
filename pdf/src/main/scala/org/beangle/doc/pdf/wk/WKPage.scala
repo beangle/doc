@@ -86,7 +86,7 @@ class WKPage(val data: String) {
 
   /** 最小字体 */
   def minimumFontSize(size: Int): this.type = {
-    set(MminimumFontSize, size)
+    set(MinimumFontSize, size)
   }
 
   /** 是否设置为打印介质(缺省否) */
