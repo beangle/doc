@@ -19,39 +19,52 @@ package org.beangle.doc.pdf.cdt
 
 import org.beangle.doc.core.{PageMargin, PrintOptions}
 import org.beangle.doc.pdf.SPDConverter
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import java.io.File
 import java.net.URI
 import java.time.Duration
-import java.util.concurrent.Executors
 
-object ChromePdfMakerTest {
+class ChromePdfMakerTest extends AnyFunSpec with Matchers {
 
-  def main(args: Array[String]): Unit = {
-    val urls = Array("https://www.oschina.net/news/248319/docker-24-0-3-released",
-      "https://www.oschina.net/news/260444/android-14")
+  private val urls = Array(
+    "https://www.oschina.net/news/248319/docker-24-0-3-released",
+    "https://www.oschina.net/news/260444/android-14"
+  )
 
-    val options = PrintOptions.defaultOptions
-    options.shrinkTo1Page = false
-    options.scale = 0.8d
-    options.margin = PageMargin.Default
-    options.pageRanges = Some("1-2")
-    options.renderDelay = Duration.ofSeconds(1)
-    val converter = new SPDConverter(new ChromePdfMaker)
-    val outDir = new File("pdf/target")
-    outDir.mkdirs()
+  private def options: PrintOptions = {
+    val o = PrintOptions.defaultOptions
+    o.shrinkTo1Page = false
+    o.scale = 0.8d
+    o.margin = PageMargin.Default
+    o.pageRanges = Some("1-2")
+    o.renderDelay = Duration.ofSeconds(2)
+    o
+  }
 
-    val exe = Executors.newFixedThreadPool(3)
-    urls.indices foreach { i =>
-      exe.submit(new Runnable() {
-        override def run(): Unit = {
-          val f = new File(outDir, s"temp${i}.pdf")
-          converter.convert(URI.create(urls(i)), f, options)
+  private def outDir: File = {
+    val dir = new File("pdf/target")
+    dir.mkdirs()
+    dir
+  }
+
+  describe("ChromePdfMaker") {
+    it("converts news pages to PDF") {
+      assume(ChromePdfMaker.isAvailable, "Chrome is not available")
+      val converter = new SPDConverter(new ChromePdfMaker)
+      try {
+        urls.zipWithIndex.foreach { case (url, i) =>
+          val out = new File(outDir, s"temp$i.pdf")
+          withClue(s"converting $url: ") {
+            converter.convert(URI.create(url), out, options) should be(true)
+            out.exists() should be(true)
+            out.length() should be > 10000L
+          }
         }
-      })
+      } finally {
+        converter.close()
+      }
     }
-    exe.shutdown()
-    exe.awaitTermination(5, java.util.concurrent.TimeUnit.MINUTES)
-    converter.close()
   }
 }

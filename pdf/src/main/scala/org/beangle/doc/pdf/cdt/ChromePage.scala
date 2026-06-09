@@ -43,7 +43,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
     if null != loadLatch then loadLatch.await()
     socket.addHandler("Page.loadEventFired", () => countDownLoadLatch())
     loadLatch = new CountDownLatch(1)
-    val r = socket.invoke("Page.navigate", Map("url" -> url))
+    val r = socket.invoke("Page.navigate", Map("url" -> LoopbackUrl.navigateUrl(url)))
     if r.isOk then frameId = (r.result \ "frameId").toString
     else frameId = null
 

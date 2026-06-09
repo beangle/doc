@@ -20,7 +20,6 @@ package org.beangle.doc.pdf.cdt
 import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.io.IOs
 import org.beangle.commons.json.Json
-import org.beangle.commons.lang.Strings
 import org.beangle.doc.pdf.Logger
 
 import java.io.{IOException, InputStream}
@@ -62,7 +61,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
   collectPages()
 
   def open(url: String): ChromePage = {
-    val p = findOrCreatePage(url)
+    val p = findOrCreatePage()
     p.navigate(url)
     p
   }
@@ -80,10 +79,10 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     }
   }
 
-  private def findOrCreatePage(url: String): ChromePage = {
+  private def findOrCreatePage(): ChromePage = {
     Locks.withLock(lock) {
       if (freePages.isEmpty) {
-        val p = createPage(url)
+        val p = createPage()
         p.enable()
         p
       } else {
@@ -96,9 +95,8 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
     request(classOf[ChromePage], "GET", String.format("http://%s:%d/%s/%s", host, port, "json/close", id))
   }
 
-  private def createPage(url: String = ""): ChromePage = {
-    request(classOf[ChromePage], "PUT", String.format("http://%s:%d/%s?%s", host, port, "json/new",
-      if (Strings.isEmpty(url)) "about:blank" else url))
+  private def createPage(): ChromePage = {
+    request(classOf[ChromePage], "PUT", String.format("http://%s:%d/%s?%s", host, port, "json/new", "about:blank"))
   }
 
   private def pages(): Array[ChromePage] = {

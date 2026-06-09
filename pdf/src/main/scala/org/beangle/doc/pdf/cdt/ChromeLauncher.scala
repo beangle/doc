@@ -72,6 +72,7 @@ object ChromeLauncher {
       .add("remote-debugging-port", "0")
       .add("remote-allow-origins", "*")
       .add("run-all-compositor-stages-before-draw", true)
+      .add("disable-features", "LocalNetworkAccessChecks")
 
     if headless then v.headless().disableGpu().hideScrollbars().muteAudio()
     v
@@ -181,11 +182,11 @@ class ChromeLauncher(config: Configuration) {
   def launch(arguments: Arguments): Chrome = {
     ChromeLauncher.findChrome() match
       case Some(p) => launch(p, arguments)
-      case None => throw new RuntimeException("Cannot find executive chrome")
+      case None => throw new RuntimeException("Cannot find executable chrome")
   }
 
   def launch(chromeBinary: Path, arguments: Arguments): Chrome = {
-    if (isAlive) throw new IllegalStateException("Chrome process has already been started started.")
+    if (isAlive) throw new IllegalStateException("Chrome process has already been started.")
     if (arguments.getUserDataDir().isEmpty) {
       val userDatDir = arguments.genTempUserDataDir()
       userDataDirPath = Paths.get(userDatDir)
