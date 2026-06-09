@@ -19,16 +19,18 @@ package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.lang.Charsets
+
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   private val socket = WebSocket(socketUrl)
   private var frameId: String = _
-  private var workingLatch: CountDownLatch = _
+  private var loadLatch: CountDownLatch = _
   private var enabled: Boolean = _
 
   def isWorking: Boolean = {
-    workingLatch != null && workingLatch.getCount > 0
+    loadLatch != null && loadLatch.getCount > 0
   }
 
   def enable(): Unit = {
@@ -38,9 +40,9 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   }
 
   def navigate(url: String): String = {
-    if null != workingLatch then workingLatch.await()
-    socket.addHandler("Page.frameStoppedLoading", () => if (null != workingLatch) workingLatch.countDown())
-    workingLatch = new CountDownLatch(1)
+    if null != loadLatch then loadLatch.await()
+    socket.addHandler("Page.loadEventFired", () => countDownLoadLatch())
+    loadLatch = new CountDownLatch(1)
     val r = socket.invoke("Page.navigate", Map("url" -> url))
     if r.isOk then frameId = (r.result \ "frameId").toString
     else frameId = null
@@ -48,21 +50,24 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
     frameId
   }
 
-  def printToPDF(params: Map[String, Any]): (String, String) = {
+  def printToPDF(params: Map[String, Any], renderDelay: Duration): (String, String) = {
     if (null == frameId) {
       ("", "Cannot open page")
     } else {
-      if (null != workingLatch) {
-        workingLatch.await()
-        workingLatch = new CountDownLatch(1)
+      if (null != loadLatch) {
+        loadLatch.await()
+        loadLatch = null
+        if !renderDelay.isZero then Thread.sleep(renderDelay.toMillis)
         val r = socket.invoke("Page.printToPDF", params)
-        workingLatch.countDown()
-        workingLatch = null
         if r.isOk then ((r.result \ "data").toString, "") else ("", r.error)
       } else {
         ("", "Page is loading")
       }
     }
+  }
+
+  private def countDownLoadLatch(): Unit = {
+    if (null != loadLatch) loadLatch.countDown()
   }
 
   private def encodeBase64(msg: String): String = {

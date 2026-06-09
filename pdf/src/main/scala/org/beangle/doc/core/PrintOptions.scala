@@ -18,6 +18,8 @@
 package org.beangle.doc.core
 
 import org.beangle.commons.lang.Strings
+
+import java.time.Duration
 import scala.math.BigDecimal.RoundingMode
 
 object PrintOptions {
@@ -47,6 +49,8 @@ class PrintOptions {
   var pageRanges: Option[String] = None
   /** 是否缩小到一页 */
   var shrinkTo1Page: Boolean = false
+  /** 页面 load 后额外等待渲染的时间，用于 JS 动态页面 */
+  var renderDelay: Duration = Duration.ZERO
 }
 
 /** 打印方向

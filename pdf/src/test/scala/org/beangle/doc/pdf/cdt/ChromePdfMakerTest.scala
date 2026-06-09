@@ -22,6 +22,7 @@ import org.beangle.doc.pdf.SPDConverter
 
 import java.io.File
 import java.net.URI
+import java.time.Duration
 import java.util.concurrent.Executors
 
 object ChromePdfMakerTest {
@@ -35,17 +36,22 @@ object ChromePdfMakerTest {
     options.scale = 0.8d
     options.margin = PageMargin.Default
     options.pageRanges = Some("1-2")
+    options.renderDelay = Duration.ofSeconds(1)
     val converter = new SPDConverter(new ChromePdfMaker)
+    val outDir = new File("pdf/target")
+    outDir.mkdirs()
 
     val exe = Executors.newFixedThreadPool(3)
     urls.indices foreach { i =>
       exe.submit(new Runnable() {
         override def run(): Unit = {
-          converter.convert(URI.create(urls(i)), new File(s"target/temp${i}.pdf"), options)
+          val f = new File(outDir, s"temp${i}.pdf")
+          converter.convert(URI.create(urls(i)), f, options)
         }
       })
     }
     exe.shutdown()
+    exe.awaitTermination(5, java.util.concurrent.TimeUnit.MINUTES)
     converter.close()
   }
 }

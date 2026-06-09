@@ -59,7 +59,7 @@ class ChromePdfMaker extends PdfMaker {
         params.put("pageRanges", ranges)
       }
       val page = chrome.open(uri.toString)
-      val res = page.printToPDF(params.toMap)
+      val res = page.printToPDF(params.toMap, options.renderDelay)
       chrome.close(page)
       if (Strings.isEmpty(res._2)) {
         Base64.dump(res._1, pdf)
