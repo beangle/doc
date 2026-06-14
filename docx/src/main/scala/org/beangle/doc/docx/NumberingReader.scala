@@ -57,7 +57,7 @@ class NumberingReader(numbering: XWPFNumbering) {
     ""
   }
 
-  private def formatNumbering(format: String, lvlText: String, counter: Int) = {
+  private def formatNumbering(format: String, lvlText: String, counter: Int): String = {
     val number =
       format.toLowerCase match {
         case "decimal" => String.valueOf(counter)

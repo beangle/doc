@@ -17,34 +17,59 @@
 
 package org.beangle.doc.docx
 
+import org.apache.poi.common.usermodel.PictureType
 import org.apache.poi.util.Units
-import org.apache.poi.xwpf.usermodel.{XWPFDocument, XWPFParagraph, XWPFRun}
+import org.apache.poi.xwpf.usermodel.*
 import org.beangle.commons.activation.{MediaType, MediaTypes}
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.conversion.string.BooleanConverter
+import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.template.api.TemplateInterpreter
 import org.beangle.template.freemarker.DefaultTemplateInterpreter
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 import java.net.URL
+import scala.jdk.javaapi.CollectionConverters.*
 
 object DocTemplate {
 
   def process(url: URL, data: collection.Map[String, Any]): Array[Byte] = {
     val templateIs = url.openStream()
-    val doc = new XWPFDocument(templateIs)
-    val template = new DocTemplate(doc)
-    val bytes = template.process(data)
-    templateIs.close()
-    bytes
+    try {
+      val doc = new XWPFDocument(templateIs)
+      new DocTemplate(doc).process(data)
+    } finally {
+      templateIs.close()
+    }
   }
 
-  def main(args: Array[String]): Unit = {
-    val template = new DocTemplate(null)
-    val rs = template.splitImg("dadffa 申请人签名：[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]${step0_auditAt}[#img src=step0_esign height=\"10mm\" width=\"30mm\" /]")
-    println(template.splitImg("dadffa 申请人签名：${dd}"))
-    println(rs)
+  /** 对每组变量完整渲染一次模板，按顺序拼接为一个文档，每份之间插入分页符。
+   *
+   * 先 `DocMerger.copyN` 复制 N 份未渲染模板（含分页），再逐段 `DocTemplate.fillBodyRange` 渲染。
+   */
+  def processAll(url: URL, items: Iterable[collection.Map[String, Any]]): Array[Byte] = {
+    val itemList = items.toSeq
+    if itemList.isEmpty then {
+      val is = url.openStream()
+      return try IOs.readBytes(is) finally is.close()
+    }
+
+    var outputDoc: XWPFDocument = null
+    try {
+      val (doc, slotRanges) = DocMerger.copyN(url, itemList.size)
+      outputDoc = doc
+      val template = new DocTemplate(outputDoc)
+      itemList.zip(slotRanges).foreach { case (data, (from, until)) =>
+        template.fillBodyRange(from, until, data)
+      }
+      val bos = new ByteArrayOutputStream()
+      outputDoc.write(bos)
+      bos.toByteArray
+    } finally {
+      if outputDoc != null then outputDoc.close()
+    }
   }
 }
 
@@ -53,152 +78,233 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
   private var imageIndex = 0
 
   def process(data: collection.Map[String, Any]): Array[Byte] = {
-    import scala.jdk.javaapi.CollectionConverters.*
+    fill(data)
+    toBytes
+  }
 
-    for (p <- asScala(doc.getParagraphs)) {
-      mergeRun(p)
-      val runs = p.getRuns
-      if (runs != null) {
-        for (r <- asScala(runs)) fillin(r, data)
+  def fill(data: collection.Map[String, Any]): Unit = {
+    fillBodyRange(0, doc.getBodyElements.size(), data)
+  }
+
+  /** 仅渲染正文中 `[bodyFrom, bodyUntil)` 范围内的段落与表格（供 `DocTemplate.processAll` 按份填充）。 */
+  def fillBodyRange(bodyFrom: Int, bodyUntil: Int, data: collection.Map[String, Any]): Unit = {
+    if bodyFrom >= bodyUntil then return
+    asScala(doc.getBodyElements).slice(bodyFrom, bodyUntil) foreach {
+      case p: XWPFParagraph => fillParagraph(p, data)
+      case tbl: XWPFTable => fillTable(tbl, data)
+      case _ =>
+    }
+  }
+
+  private def fillParagraph(p: XWPFParagraph, data: collection.Map[String, Any]): Unit = {
+    mergeRun(p)
+    val runs = p.getRuns
+    if runs != null then
+      asScala(runs).toSeq.foreach { r => fillin(r, data) }
+  }
+
+  private def fillTable(tbl: XWPFTable, data: collection.Map[String, Any]): Unit = {
+    for (row <- asScala(tbl.getRows)) {
+      for (cell <- asScala(row.getTableCells)) {
+        for (p <- asScala(cell.getParagraphs)) fillParagraph(p, data)
       }
     }
+  }
 
-    for (tbl <- asScala(doc.getTables)) {
-      for (row <- asScala(tbl.getRows)) {
-        for (cell <- asScala(row.getTableCells)) {
-          for (p <- asScala(cell.getParagraphs)) {
-            mergeRun(p)
-            for (r <- asScala(p.getRuns)) fillin(r, data)
-          }
-        }
-      }
-    }
+  def write(out: OutputStream): Unit = {
+    doc.write(out)
+  }
+
+  def toBytes: Array[Byte] = {
     val bos = new ByteArrayOutputStream()
     doc.write(bos)
     bos.toByteArray
   }
 
-  /** 将表达式开始，但是在一个run中没有结束的run和后续几个进行合并
-   *
-   * @param p
-   */
+  /** 合并跨 run 的 `${…}`、`[#…]` 模板片段（Word 常把 `[` 等拆成独立 run）。 */
   private def mergeRun(p: XWPFParagraph): Unit = {
-    val runs = p.getRuns
-    if (runs != null) {
-      var i = 0
-      val runIter = runs.iterator()
+    val runs = asScala(p.getRuns).toSeq
+    if runs.isEmpty then return
 
-      val headText = new StringBuilder()
-      var headRun: Option[XWPFRun] = None
-      val removed = Collections.newBuffer[Int]
-      while (runIter.hasNext) {
-        val run = runIter.next()
-        val text = run.getText(0)
+    val texts = runs.map(r => Option(DocHelper.readText(r)).getOrElse(""))
+    val full = texts.mkString
+    if full.isEmpty then return
 
-        if (headRun.nonEmpty) {
-          if (Strings.isNotEmpty(text)) {
-            headText.addAll(text)
-            if (isExpEnd(text)) {
-              headRun.get.setText(headText.mkString, 0)
-              headText.clear()
-              headRun = None
-            }
-          }
-          removed.addOne(i)
-        } else {
-          if (null != text) {
-            if (isExpStart(text) && !isExpEnd(text)) { //开始但是没有结束的，作为合并的起点
-              headRun = Some(run)
-              headText.addAll(text)
-            }
-          }
-        }
-        i += 1
-      }
-      //从较大的序号开始删除，保证原始序列的编号稳定性
-      removed.reverse foreach { i =>
-        p.removeRun(i)
-      }
+    val runStarts = texts.scanLeft(0)(_ + _.length).init
+
+    def runIndexAt(pos: Int): Int =
+      if pos < 0 then -1 else runStarts.lastIndexWhere(_ <= pos)
+
+    val mergeGroups = findTemplateRegions(full).flatMap { case (start, end) =>
+      val rStart = runIndexAt(start)
+      val rEnd = runIndexAt(math.max(start, end - 1))
+      if rStart >= 0 && rEnd > rStart then Some((rStart, rEnd)) else None
+    }.distinct.sortBy(-_._1)
+
+    mergeGroups.foreach { case (rStart, rEnd) =>
+      runs(rStart).setText(texts.slice(rStart, rEnd + 1).mkString, 0)
+      (rStart + 1 to rEnd).reverse.foreach(p.removeRun)
     }
   }
 
+  /** 在段落拼接文本中定位需保持完整的模板区间 `[start, end)`。 */
+  private def findTemplateRegions(text: String): Seq[(Int, Int)] = {
+    val regions = Collections.newBuffer[(Int, Int)]
+    var i = 0
+    while i < text.length do {
+      if i + 1 < text.length && text(i) == '$' && text(i + 1) == '{' then
+        val end = text.indexOf('}', i + 2)
+        if end >= 0 then {
+          regions.addOne((i, end + 1))
+          i = end + 1
+        } else i += 1
+      else if i + 1 < text.length && text(i) == '[' && text(i + 1) == '#' then
+        val end = text.indexOf("/]", i + 2)
+        if end >= 0 then {
+          regions.addOne((i, end + 2))
+          i = end + 2
+        } else i += 1
+      else i += 1
+    }
+    regions.toSeq
+  }
+
+  /** 供测试：定位段落文本中的模板区间。 */
+  protected[docx] def templateRegions(text: String): Seq[(Int, Int)] = findTemplateRegions(text)
+
   private def fillin(run: XWPFRun, data: collection.Map[String, Any]): Unit = {
-    val rs = splitImg(DocHelper.readText(run))
-    //生成所有的图片
-    val imgs = Collections.newMap[String, Picture]
-    rs._2 foreach { case (imgName, tag) =>
-      val propertyStr = Strings.substringBetween(tag, "[#img ", "/]")
-      val p = Strings.split(propertyStr, "=").flatMap(Strings.split)
-      val properties = Collections.newMap[String, String]
-      var i = 1
-      while (i < p.length) {
-        if p(i).startsWith("\"") then
-          val v = Strings.substringBetween(p(i), "\"", "\"")
-          properties.put(p(i - 1), v)
-        else if (data.contains(p(i)) && null != data(p(i))) {
-          properties.put(p(i - 1), data(p(i)).toString)
-        }
-        i += 2
-      }
-      if (properties.contains("src")) {
-        var src = properties("src")
-        if (src.contains("base64,")) {
-          src = Strings.substringAfter(src, "base64,")
-        }
-        val width = toEmu(properties("width"))
-        val height = toEmu(properties("height"))
-        val mediaType = MediaTypes.png
-        imgs.put(imgName, Picture(new ByteArrayInputStream(Base64.decode(src)), mediaType, generateImgName(mediaType), width, height))
-      }
-    }
+    val rawText = DocHelper.readText(run)
+    val (textWithPh, directives) = extractDirectives(rawText)
+    var text = textWithPh
 
-    var text = rs._1
-    var changed = rs._2.nonEmpty
+    val maxLen = directives.collectFirst {
+      case Directive("maxlen", _, Some(n), _) => n.trim.toIntOption
+    }.flatten.getOrElse(-1)
+    text = directives.filter(_.kind == "maxlen").foldLeft(text)((t, d) => t.replace(d.placeholder, ""))
 
-    //处理缩放
-    val si = scale(text, run)
-    text = si._2
-    //解析变量
-    if (text.contains("${")) {
-      text = interpreter.process(text, data)
-    }
-    //实施缩放
-    if (si._1 > 0) {
-      val max = si._1
+    if text.contains("${") then text = interpreter.process(text, data)
+
+    if maxLen > 0 then {
       val resultLen = Chars.charLength(text)
-      if (resultLen > max) {
-        val scale = java.lang.Double.valueOf(max * 100.0 / resultLen).toInt
+      if resultLen > maxLen then {
+        val scale = java.lang.Double.valueOf(maxLen * 100.0 / resultLen).toInt
         run.setTextScale(scale)
       }
     }
-    //开始填入
-    if text != rs._1 then changed = true
-    if (changed) {
-      if (rs._2.isEmpty) {
-        DocHelper.set(run, text)
-      } else {
-        val results = Collections.newBuffer[Any]
-        var pIdx = 0
-        rs._2.keys.toSeq.sorted foreach { imgName =>
-          val imgIdx = text.indexOf(imgName, pIdx)
-          results.addOne(text.substring(pIdx, imgIdx))
-          pIdx += (imgIdx + imgName.length)
-          imgs.get(imgName) match {
-            case None => results.addOne("")
-            case Some(p) => results.addOne(p)
-          }
+
+    val fillables = Collections.newMap[String, Any]
+    directives.foreach {
+      case d @ Directive("img", ph, _, props) =>
+        buildPicture(resolveProperties(props, data)).foreach(p => fillables.put(ph, p))
+      case d @ Directive("checkbox", ph, name, _) =>
+        name.foreach { n =>
+          fillables.put(ph, DocHelper.CheckboxGlyph(resolveCheckbox(n, data)))
         }
-        if (pIdx < text.length) {
-          results.addOne(text.substring(pIdx))
+      case _ =>
+    }
+
+    val changed = text != rawText || fillables.nonEmpty
+    if !changed then return
+
+    val placeholders = placeholdersInText(text, fillables.keys)
+    if placeholders.isEmpty then DocHelper.set(run, text)
+    else {
+      val results = Collections.newBuffer[Any]
+      var pIdx = 0
+      placeholders.foreach { tag =>
+        val tagIdx = text.indexOf(tag, pIdx)
+        if tagIdx >= 0 then {
+          if tagIdx > pIdx then results.addOne(text.substring(pIdx, tagIdx))
+          fillables.get(tag).foreach(results.addOne)
+          pIdx = tagIdx + tag.length
         }
-        DocHelper.set(run, results)
+      }
+      if pIdx < text.length then results.addOne(text.substring(pIdx))
+      applyFill(run, results.toSeq)
+    }
+  }
+
+  private def resolveProperties(props: Map[String, String], data: collection.Map[String, Any]): Map[String, String] =
+    props.map { case (k, v) => (k, resolvePropertyValue(v, data)) }
+
+  private def resolvePropertyValue(raw: String, data: collection.Map[String, Any]): String = {
+    val literal = stripQuotes(Strings.trim(raw))
+    if data.contains(literal) then data(literal).toString else literal
+  }
+
+  private def buildPicture(props: Map[String, String]): Option[Picture] = {
+    if !props.contains("src") then None
+    else {
+      var src = props("src")
+      if src.contains("base64,") then src = Strings.substringAfter(src, "base64,")
+      val width = toEmu(props.getOrElse("width", "0"))
+      val height = toEmu(props.getOrElse("height", "0"))
+      val mediaType = MediaTypes.png
+      val bytes = Base64.decode(src)
+      Some(Picture(new ByteArrayInputStream(bytes), mediaType, generateImgName(mediaType), width, height))
+    }
+  }
+
+  private def parseCheckboxValue(value: Any): Boolean = {
+    value match {
+      case b: Boolean => b
+      case _ => BooleanConverter(value.toString)
+    }
+  }
+
+  /** checkbox 变量一律经模板求值，并用 `?c` 格式化为 `true`/`false` 字符串。 */
+  private def resolveCheckbox(name: String, data: collection.Map[String, Any]): Boolean = {
+    val template = checkboxTemplate(name)
+    if template.isEmpty then false
+    else parseCheckboxValue(interpreter.process(template, data))
+  }
+
+  private def checkboxTemplate(name: String): String = {
+    if name.isEmpty then ""
+    else if name.endsWith("?c") then s"$${$name}"
+    else s"$${(($name)!false)?c}"
+  }
+
+
+  /** 按片段写入 run；含复选框或图片时拆成多个 run（字体不同）。 */
+  private def applyFill(run: XWPFRun, components: Seq[Any]): Unit = {
+    val needsSplit = components.size > 1 || components.exists {
+      case _: DocHelper.CheckboxGlyph | _: Picture => true
+      case _ => false
+    }
+    if !needsSplit then
+      components.headOption foreach {
+        case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(run, c.checked)
+        case other => DocHelper.set(run, other.toString)
+      }
+    else
+      applySplitRuns(run.getParagraph, run, components)
+  }
+
+  private def applySplitRuns(p: XWPFParagraph, firstRun: XWPFRun, components: Seq[Any]): Unit = {
+    var pos = p.getRuns.indexOf(firstRun)
+    if pos < 0 then pos = 0
+    components.zipWithIndex.foreach { case (component, i) =>
+      val target =
+        if i == 0 then firstRun
+        else {
+          pos += 1
+          p.insertNewRun(pos)
+        }
+      component match {
+        case s: String => DocHelper.set(target, s)
+        case pic: Picture =>
+          val pictureType = PictureType.valueOf(pic.mediaType.subType.toUpperCase)
+          target.addPicture(pic.is, pictureType, pic.filename, pic.width, pic.height)
+        case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(target, c.checked)
+        case other => DocHelper.set(target, other.toString)
       }
     }
   }
 
   private def generateImgName(mediaType: MediaType): String = {
     imageIndex += 1
-    s"img${this.imageIndex}.${mediaType.subType}"
+    s"img${imageIndex}.${mediaType.subType}"
   }
 
   private def toEmu(num: String): Int = {
@@ -215,78 +321,107 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     }
   }
 
-  private def isExpStart(text: String): Boolean = {
-    text.contains("${") || text.contains("[#")
-  }
+  private def placeholdersInText(text: String, keys: Iterable[String]): Seq[String] =
+    keys.toSeq.filter(text.contains).sortBy(text.indexOf(_))
 
-  private def isExpEnd(text: String): Boolean = {
-    val expStart = text.lastIndexOf("${")
-    val expEnd = text.lastIndexOf("}")
-    val directiveStart = text.lastIndexOf("[#")
-    val directiveEnd = text.lastIndexOf("]")
+  /** 一次性解析文本中全部 `[#kind … /]` 指令，正文替换为 `#kind1#` 占位符。 */
+  protected[docx] def extractDirectives(text: String): (String, Seq[Directive]) = {
+    if null == text || text == "" then return (text, Seq.empty)
 
-    expEnd > -1 && expEnd > expStart || directiveEnd > -1 && directiveEnd > directiveStart
-  }
-
-  private def scale(text: String, r: XWPFRun): (Int, String) = {
-    if (text.contains("[#maxlen")) {
-      val max = Integer.parseInt(Strings.substringBetween(text, "[#maxlen", "]").trim())
-      val processed = removeDirective(text, "[#maxlen", "]")
-      (max, processed)
-    } else {
-      (-1, text)
-    }
-  }
-
-  private def removeDirective(text: String, start: String, end: String): String = {
-    if (text.contains(start)) {
-      val startIdx = text.indexOf(start)
-      val endIdx = text.indexOf(end, startIdx)
-      if (startIdx >= 0 && endIdx > startIdx) {
-        new StringBuilder(text).delete(startIdx, endIdx + end.length).toString()
-      } else {
-        text
-      }
-    } else {
-      text
-    }
-  }
-
-  /** 将[#img指令拆成独立的片段
-   *
-   * @param text
-   * @return
-   */
-  protected[docx] def splitImg(text: String): (String, collection.Map[String, String]) = {
-    if (null == text || text == "") return (text, Map.empty)
-
-    val results = Collections.newBuffer[String]
     val sb = new StringBuilder()
-    val imgs = Collections.newMap[String, String]
-    val start = "[#img"
-    val end = "]"
+    val list = Collections.newBuffer[Directive]
+    val kindIndex = Collections.newMap[String, Int]
     var processIdx = 0
-    var imgIdx = 0
-    while (text.indexOf(start, processIdx) >= processIdx && text.indexOf(end, processIdx) >= processIdx) {
-      val startIdx = text.indexOf(start, processIdx)
-      val endIdx = text.indexOf(end, processIdx)
-      if (startIdx >= 0 && endIdx > startIdx) {
-        val img = text.substring(startIdx, endIdx + 1)
-        sb.addAll(text.substring(processIdx, startIdx))
-        imgIdx += 1
-        val imgTag = s"#img${imgIdx}#"
-        imgs.put(imgTag, img)
-        sb.addAll(imgTag)
-      }
-      if (endIdx > processIdx) {
-        processIdx = endIdx + 1
-      } else {
+    while processIdx < text.length do {
+      val startIdx = text.indexOf("[#", processIdx)
+      if startIdx < 0 then {
+        sb.addAll(text.substring(processIdx))
         processIdx = text.length
+      } else {
+        sb.addAll(text.substring(processIdx, startIdx))
+        val slashEnd = text.indexOf("/]", startIdx)
+        if slashEnd < 0 then {
+          sb.addAll(text.substring(startIdx))
+          processIdx = text.length
+        } else {
+          val full = text.substring(startIdx, slashEnd + 2)
+          val kind = directiveKind(full)
+          if Strings.isEmpty(kind) then {
+            sb.addAll("[#")
+            processIdx = startIdx + 2
+          } else {
+            val body = directiveBody(full, kind)
+            val (name, props) = parseDirectiveBody(body)
+            val n = kindIndex.getOrElse(kind, 0) + 1
+            kindIndex.put(kind, n)
+            val placeholder = s"#${kind}${n}#"
+            list.addOne(Directive(kind, placeholder, name, props.toMap))
+            sb.addAll(placeholder)
+            processIdx = slashEnd + 2
+          }
+        }
       }
     }
-    if (processIdx < text.length) {
-      sb.addAll(text.substring(processIdx))
+    (sb.toString(), list.toSeq)
+  }
+
+  private def directiveKind(full: String): String = {
+    var i = 2
+    val kind = new StringBuilder()
+    while i < full.length && full(i) != ' ' && full(i) != '/' do {
+      kind.append(full(i))
+      i += 1
     }
-    (sb.toString(), imgs)
+    kind.toString
+  }
+
+  private def directiveBody(full: String, kind: String): String = {
+    val head = s"[#$kind"
+    if !full.startsWith(head) then ""
+    else if full.length <= head.length + 2 then ""
+    else if full(head.length) == ' ' then Strings.trim(full.substring(head.length + 1, full.length - 2))
+    else Strings.trim(full.substring(head.length, full.length - 2))
+  }
+
+  private def parseDirectiveBody(body: String): (Option[String], collection.Map[String, String]) = {
+    val trimmed = Strings.trim(body)
+    if Strings.isEmpty(trimmed) then (None, Map.empty)
+    else if !trimmed.contains("=") then (Some(stripQuotes(trimmed)), Map.empty)
+    else {
+      val props = parseProperties(trimmed)
+      val name = props.get("name").map(stripQuotes)
+      (name, props)
+    }
+  }
+
+  private def parseProperties(body: String): collection.Map[String, String] = {
+    val props = Collections.newMap[String, String]
+    var i = 0
+    while i < body.length do {
+      while i < body.length && body(i) == ' ' do i += 1
+      if i >= body.length then return props
+      val eq = body.indexOf('=', i)
+      if eq < 0 then return props
+      val key = Strings.trim(body.substring(i, eq))
+      i = eq + 1
+      if i < body.length && body(i) == '"' then {
+        val endQuote = body.indexOf('"', i + 1)
+        if endQuote >= 0 then {
+          props.put(key, body.substring(i + 1, endQuote))
+          i = endQuote + 1
+        } else i = body.length
+      } else {
+        val space = body.indexOf(' ', i)
+        val value = if space >= 0 then body.substring(i, space) else body.substring(i)
+        props.put(key, Strings.trim(value))
+        i = if space >= 0 then space + 1 else body.length
+      }
+    }
+    props
+  }
+
+  private def stripQuotes(value: String): String = {
+    val t = Strings.trim(value)
+    if t.length >= 2 && t.startsWith("\"") && t.endsWith("\"") then t.substring(1, t.length - 1) else t
   }
 }

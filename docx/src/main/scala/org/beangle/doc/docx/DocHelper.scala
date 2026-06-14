@@ -18,18 +18,30 @@
 package org.beangle.doc.docx
 
 import org.apache.poi.common.usermodel.PictureType
-import org.apache.poi.xwpf.usermodel.XWPFRun
+import org.apache.poi.xwpf.usermodel.{BreakType, IBodyElement, XWPFParagraph, XWPFRun}
 import org.beangle.commons.lang.Strings
 
 import java.net.URL
 
 object DocHelper {
 
+  /** Wingdings 2 复选框：选中 U+0052(`R`)，未选 U+00A3(`£`)。 */
+  val CheckboxFont = "Wingdings 2"
+  private val CheckboxChecked = "R"
+  private val CheckboxUnchecked = "\u00A3"
+
+  /** 填充结果中的复选框片段（由 `[#checkbox …]` 解析）。 */
+  final case class CheckboxGlyph(checked: Boolean)
+
   @deprecated("using DocTemplate")
   def toDoc(url: URL, data: collection.Map[String, Any]): Array[Byte] = {
     DocTemplate.process(url, data)
   }
 
+  def applyCheckbox(run: XWPFRun, checked: Boolean): Unit = {
+    run.setFontFamily(CheckboxFont)
+    run.setText(if checked then CheckboxChecked else CheckboxUnchecked, 0)
+  }
   /** 读取一个run的文本
    *
    * @param run
@@ -69,7 +81,17 @@ object DocHelper {
       case p: Picture =>
         val pictureType = PictureType.valueOf(p.mediaType.subType.toUpperCase)
         run.addPicture(p.is, pictureType, p.filename, p.width, p.height)
+      case c: CheckboxGlyph =>
+        applyCheckbox(run, c.checked)
     }
+  }
 
+  def addPageBreakAfter(elem: IBodyElement): Unit = {
+    elem match {
+      case p: XWPFParagraph => p.createRun().addBreak(BreakType.PAGE)
+      case _ =>
+        val doc = elem.getBody.getXWPFDocument
+        doc.createParagraph().createRun().addBreak(BreakType.PAGE)
+    }
   }
 }
