@@ -19,7 +19,7 @@ package org.beangle.doc.excel.template.directive
 
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.bean.orderings.PropertyOrdering
-import org.beangle.commons.script.ExpressionEvaluator
+import org.beangle.commons.script.ExprEvaluator
 import org.beangle.doc.excel.template.*
 import org.beangle.doc.excel.template.directive.EachDirective.*
 import org.beangle.doc.excel.{CellRef, Size}
@@ -94,7 +94,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
    *
    * @return an iterable object from the {@link Context} under given name
    */
-  private def transformToIterableObject(evaluator: ExpressionEvaluator, collectionName: String, context: Context): Iterable[_] = {
+  private def transformToIterableObject(evaluator: ExprEvaluator, collectionName: String, context: Context): Iterable[_] = {
     val collectionObject = evaluator.eval(collectionName, context.toMap)
     collectionObject match {
       case null => List.empty

@@ -17,7 +17,7 @@
 
 package org.beangle.doc.html
 
-import org.beangle.commons.lang.Numbers
+import org.beangle.commons.lang.Doubles
 import org.beangle.doc.html.Length.*
 
 object Length {
@@ -57,7 +57,7 @@ object Length {
    * @return
    */
   def dxaToMM(dxa: Double): Length = {
-    Length(Numbers.round(dxa / 20 * 0.353f, 2), "mm")
+    Length(Doubles.round(dxa / 20 * 0.353f, 2), "mm")
   }
 
   def dxa(v: Int): Length = {

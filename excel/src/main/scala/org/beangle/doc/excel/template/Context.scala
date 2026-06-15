@@ -17,7 +17,7 @@
 
 package org.beangle.doc.excel.template
 
-import org.beangle.commons.script.Jexl3
+import org.beangle.commons.script.{ExprEvaluator, Jexl3}
 
 import scala.collection.mutable
 
@@ -27,7 +27,7 @@ import scala.collection.mutable
 class Context {
   protected var varMap = new mutable.HashMap[String, Any]
 
-  var evaluator = Jexl3.newEvaluator()
+  var evaluator = ExprEvaluator.get(ExprEvaluator.Jexl3Engine)
 
   /**
    * Evaluates if the passed condition is true

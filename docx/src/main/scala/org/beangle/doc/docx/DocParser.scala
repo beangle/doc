@@ -21,7 +21,7 @@ import org.apache.poi.openxml4j.util.ZipSecureFile
 import org.apache.poi.xwpf.usermodel.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files
-import org.beangle.commons.lang.{Numbers, Strings}
+import org.beangle.commons.lang.{Doubles, Numbers, Strings}
 import org.beangle.doc.html
 import org.beangle.doc.html.*
 import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.{STTwipsMeasure, STVerticalAlignRun}
@@ -492,7 +492,7 @@ class DocParser(document: html.Document) {
       val left = dxaToMM(mar.xgetLeft)
       leftMargin = left
       body.addStyle("padding", s"${top}mm ${right}mm ${bottom}mm ${left}mm")
-      body.addStyle("width", s"${Numbers.round(210 - left - right, 2)}mm")
+      body.addStyle("width", s"${Doubles.round(210 - left - right, 2)}mm")
     }
   }
 
