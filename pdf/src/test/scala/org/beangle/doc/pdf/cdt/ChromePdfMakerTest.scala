@@ -26,6 +26,9 @@ import org.scalatest.matchers.should.Matchers
 import java.io.File
 import java.net.URI
 import java.time.Duration
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
 
@@ -40,7 +43,7 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
     o.scale = 0.8d
     o.margin = PageMargin.Default
     o.pageRanges = Some("1-2")
-    o.renderDelay = Duration.ofSeconds(10)
+    o.renderDelay = Duration.ofMillis(200)
     o
   }
 
@@ -64,6 +67,28 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
             out.length() should be > 10000L
           }
         }
+      } finally {
+        converter.close()
+      }
+    }
+
+    it("converts news pages concurrently") {
+      assume(ChromePdfMaker.isAvailable, "Chrome is not available")
+      val maker = new ChromePdfMaker
+      maker.maxPages = urls.length
+      val converter = new SPDConverter(maker)
+      try {
+        val futures = urls.zipWithIndex.map { case (url, i) =>
+          Future {
+            val out = new File(outDir, s"parallel$i.pdf")
+            withClue(s"converting $url: ") {
+              converter.convert(URI.create(url), out, options) should be(true)
+              out.exists() should be(true)
+              out.length() should be > 10000L
+            }
+          }
+        }
+        Await.result(Future.sequence(futures), 120.seconds)
       } finally {
         converter.close()
       }

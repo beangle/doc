@@ -28,29 +28,10 @@ import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 
-object Chrome {
+/** Chrome DevTools Client */
+class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
 
-  def start(headless: Boolean = true): Chrome = {
-    val launcher = ChromeLauncher()
-    val chrome = launcher.launch(headless)
-    Logger.debug(chrome.version())
-    chrome
-  }
-}
-
-/** Chrome DevTools Client
- * It can be used for *instrumenting, inspecting, debuging and profiling Chromium, Chrome and other Blink-based browsers.*
- * For more information on DevTools, see https://chromedevtools.github.io/devtools-protocol/.
- * Some ideas come from Github project chrome-devtools-java-client.
- *
- * @param launcher
- * @param host
- * @param port
- * @param maxIdle
- */
-class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2) {
-
-  private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxIdle)
+  private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxPages)
 
   private val pageIdGenerator = new AtomicInteger(1)
 
@@ -62,14 +43,45 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
 
   def open(url: String): ChromePage = {
     val p = findOrCreatePage()
-    p.navigate(url)
-    p
+    try
+      p.navigate(url)
+      p
+    catch
+      case e: Throwable =>
+        close(p)
+        throw e
   }
 
   def close(p: ChromePage): Unit = {
-    if (!freePages.offer(p)) {
-      closePage(p.pageId)
-    }
+    if null == p then return
+    try
+      if !freePages.offer(p) then discardPage(p)
+    catch
+      case e: Throwable => Logger.debug(s"Close page ${p.pageId} ignored: ${e.getMessage}")
+  }
+
+  def exit(): Unit = {
+    try
+      Locks.withLock(lock) {
+        var p = freePages.poll()
+        while (null != p) {
+          p.close()
+          p = freePages.poll()
+        }
+      }
+    catch
+      case e: Throwable => Logger.debug(s"Exit free pages ignored: ${e.getMessage}")
+
+    try
+      launcher.close()
+    catch
+      case e: Throwable => Logger.debug(s"Exit launcher ignored: ${e.getMessage}")
+  }
+
+  def isAlive: Boolean = launcher.isAlive
+
+  def version(): String = {
+    request(classOf[String], "GET", String.format("http://%s:%d/%s", host, port, "json/version"))
   }
 
   private def collectPages(): Unit = {
@@ -81,18 +93,25 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
 
   private def findOrCreatePage(): ChromePage = {
     Locks.withLock(lock) {
-      if (freePages.isEmpty) {
-        val p = createPage()
-        p.enable()
-        p
-      } else {
-        freePages.poll()
-      }
+      val p = freePages.poll()
+      if (null != p) then p
+      else
+        val page = createPage()
+        page.enable()
+        page
     }
   }
 
-  private def closePage(id: String): ChromePage = {
-    request(classOf[ChromePage], "GET", String.format("http://%s:%d/%s/%s", host, port, "json/close", id))
+  private def discardPage(p: ChromePage): Unit = {
+    try
+      p.close()
+      closeTab(p.pageId)
+    catch
+      case e: Throwable => Logger.debug(s"Discard page ${p.pageId} ignored: ${e.getMessage}")
+  }
+
+  private def closeTab(id: String): Unit = {
+    request(classOf[Void], "GET", String.format("http://%s:%d/%s/%s", host, port, "json/close", id))
   }
 
   private def createPage(): ChromePage = {
@@ -101,14 +120,6 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdle: Int = 2
 
   private def pages(): Array[ChromePage] = {
     request(classOf[Array[ChromePage]], "GET", String.format("http://%s:%d/%s", host, port, "json/list"))
-  }
-
-  def version(): String = {
-    request(classOf[String], "GET", String.format("http://%s:%d/%s", host, port, "json/version"))
-  }
-
-  def exit(): Unit = {
-    launcher.close()
   }
 
   private def request[T](responseType: Class[T], method: String, path: String): T = {

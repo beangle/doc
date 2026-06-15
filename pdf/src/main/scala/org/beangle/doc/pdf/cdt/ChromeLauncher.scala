@@ -18,6 +18,7 @@
 package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.lang.Processes
+import org.beangle.doc.pdf.Logger
 import org.beangle.doc.pdf.cdt.ChromeLauncher.{Arguments, Configuration}
 
 import java.io.IOException
@@ -28,8 +29,14 @@ import java.util.regex.Pattern
 import scala.collection.mutable
 
 object ChromeLauncher {
-  def apply(): ChromeLauncher = {
-    new ChromeLauncher(new Configuration)
+
+  def start(maxPages: Int, headless: Boolean = true): Chrome = {
+    val cfg = new Configuration
+    cfg.maxPages = maxPages
+    val launcher = new ChromeLauncher(cfg)
+    val chrome = launcher.launch(headless)
+    Logger.debug(chrome.version())
+    chrome
   }
 
   def findChrome(): Option[Path] = {
@@ -50,6 +57,8 @@ object ChromeLauncher {
     var shutdownWaitTime = 60
     /** wait time for threads to stop. */
     var threadWaitTime = 5
+    /** max pages */
+    var maxPages: Int = 5
   }
 
   def defaultsArgs(headless: Boolean = true): Arguments = {
@@ -193,7 +202,7 @@ class ChromeLauncher(config: Configuration) {
     }
     try {
       chromeProcess = Processes.launch(chromeBinary.toString, arguments.build(), pb => pb.redirectErrorStream(true).redirectOutput(Redirect.PIPE))
-      new Chrome(this, "localhost", waitForDevToolsPort(chromeProcess))
+      new Chrome(this, "localhost", waitForDevToolsPort(chromeProcess), config.maxPages)
     } catch {
       case e: IOException => throw new RuntimeException("Failed starting chrome process.", e)
       case e: Exception =>

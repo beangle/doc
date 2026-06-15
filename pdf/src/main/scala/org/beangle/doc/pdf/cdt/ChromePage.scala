@@ -17,11 +17,10 @@
 
 package org.beangle.doc.pdf.cdt
 
-import org.beangle.commons.codec.binary.Base64
-import org.beangle.commons.lang.Charsets
+import org.beangle.doc.pdf.Logger
 
 import java.time.Duration
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   private val socket = WebSocket(socketUrl)
@@ -29,49 +28,58 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   private var loadLatch: CountDownLatch = _
   private var enabled: Boolean = _
 
-  def isWorking: Boolean = {
-    loadLatch != null && loadLatch.getCount > 0
-  }
+  private val NetworkIdleTimeout = Duration.ofSeconds(30)
 
   def enable(): Unit = {
     if !enabled then
       socket.send("Page.enable")
+      socket.invoke("Page.setLifecycleEventsEnabled", Map("enabled" -> true))
       enabled = true
   }
 
   def navigate(url: String): String = {
     if null != loadLatch then loadLatch.await()
-    socket.addHandler("Page.loadEventFired", () => countDownLoadLatch())
     loadLatch = new CountDownLatch(1)
-    val r = socket.invoke("Page.navigate", Map("url" -> LoopbackUrl.navigateUrl(url)))
-    if r.isOk then frameId = (r.result \ "frameId").toString
-    else frameId = null
+    var loaded = false
+    var acceptEvents = false
 
-    frameId
+    socket.addHandler("Page.loadEventFired", () => {
+      if acceptEvents then loaded = true
+    })
+    socket.addParamHandler("Page.lifecycleEvent", params => {
+      if acceptEvents && loaded && (params \ "name").toString == "networkIdle" && null != loadLatch then
+        loadLatch.countDown()
+    })
+
+    try {
+      acceptEvents = true
+      val r = socket.invoke("Page.navigate", Map("url" -> LoopbackUrl.navigateUrl(url)))
+      if r.isOk then frameId = (r.result \ "frameId").toString
+      else frameId = null
+
+      if r.isOk then
+        loadLatch.await(NetworkIdleTimeout.toSeconds, TimeUnit.SECONDS)
+      frameId
+    } finally {
+      loadLatch = null
+    }
   }
 
   def printToPDF(params: Map[String, Any], renderDelay: Duration): (String, String) = {
     if (null == frameId) {
       ("", "Cannot open page")
     } else {
-      if (null != loadLatch) {
-        loadLatch.await()
-        loadLatch = null
-        if !renderDelay.isZero then Thread.sleep(renderDelay.toMillis)
-        val r = socket.invoke("Page.printToPDF", params)
-        if r.isOk then ((r.result \ "data").toString, "") else ("", r.error)
-      } else {
-        ("", "Page is loading")
-      }
+      if !renderDelay.isZero then Thread.sleep(renderDelay.toMillis)
+      val r = socket.invoke("Page.printToPDF", params)
+      if r.isOk then ((r.result \ "data").toString, "") else ("", r.error)
     }
   }
 
-  private def countDownLoadLatch(): Unit = {
-    if (null != loadLatch) loadLatch.countDown()
-  }
-
-  private def encodeBase64(msg: String): String = {
-    Base64.encode(msg.getBytes(Charsets.UTF_8))
+  def close(): Unit = {
+    try
+      socket.close()
+    catch
+      case e: Throwable => Logger.debug(s"Close page ${pageId} ignored: ${e.getMessage}")
   }
 
   override def toString: String = {

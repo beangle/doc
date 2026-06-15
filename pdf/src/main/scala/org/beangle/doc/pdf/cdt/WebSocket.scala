@@ -61,12 +61,18 @@ class WebSocket(uri: URI) {
 
   private val handlers = Collections.newMap[String, () => Unit]
 
+  private val paramHandlers = Collections.newMap[String, Json => Unit]
+
   private val commandId = new AtomicInteger(1)
 
   private var lastId: Int = 0
 
   def addHandler(event: String, handler: () => Unit): Unit = {
     handlers.put(event, handler)
+  }
+
+  def addParamHandler(event: String, handler: Json => Unit): Unit = {
+    paramHandlers.put(event, handler)
   }
 
   def connect(): Unit = {
@@ -105,7 +111,10 @@ class WebSocket(uri: URI) {
             if null != invokeLatch then invokeLatch.countDown()
           }
         } else if (v.contains("method")) {
-          handlers.get(v.getString("method")) foreach { f => f() }
+          val method = v.getString("method")
+          val params = if v.contains("params") then v \ "params" else Json.emptyObject
+          handlers.get(method) foreach { f => f() }
+          paramHandlers.get(method) foreach { f => f(params) }
         } else {
           Logger.error("Ignore event " + var1)
         }
