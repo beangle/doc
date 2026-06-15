@@ -35,14 +35,21 @@ object ChromePdfMaker {
   }
 }
 
+/** PdfMaker backed by headless Chrome via CDP.
+ *
+ * Keeps one Chrome process alive and reuses tabs from a page pool (`Chrome`). Safe for concurrent
+ * `convert()` from multiple threads; `close()` blocks until all in-flight conversions finish.
+ */
 class ChromePdfMaker extends PdfMaker {
 
   private val lock = new ReentrantLock()
 
+  /** Wakes threads blocked in `close()` when the last in-flight convert finishes. */
   private val idle = lock.newCondition()
 
   private val inFlight = new AtomicInteger(0)
 
+  /** Lazily started; recreated after fatal errors or explicit shutdown. */
   private var chrome: Chrome = _
 
   /** Max idle tabs kept for concurrent convert; should be >= expected parallelism. */
@@ -61,6 +68,7 @@ class ChromePdfMaker extends PdfMaker {
     } finally {
       inFlight.decrementAndGet()
       Locks.withLock(lock) {
+        // Tear down a broken Chrome when the last task ends; wake close() waiters.
         if (failed && inFlight.get() == 0) then shutdownChromeUnsafe()
         else if (null != chrome && !chrome.isAlive) then shutdownChromeUnsafe()
         if (inFlight.get() == 0) then idle.signalAll()
@@ -68,6 +76,7 @@ class ChromePdfMaker extends PdfMaker {
     }
   }
 
+  /** Borrow a tab, navigate, print, then return the tab to the pool. */
   private def doConvert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     var page: ChromePage = null
     var c: Chrome = null
@@ -88,6 +97,7 @@ class ChromePdfMaker extends PdfMaker {
     }
   }
 
+  /** Wait for in-flight conversions, then kill the Chrome process. Never throws. */
   def close(): Unit = {
     Locks.withLock(lock) {
       while (inFlight.get() > 0) {

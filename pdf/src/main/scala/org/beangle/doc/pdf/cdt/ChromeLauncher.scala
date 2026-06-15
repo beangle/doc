@@ -30,6 +30,7 @@ import scala.collection.mutable
 
 object ChromeLauncher {
 
+  /** Start headless Chrome and connect a CDP client with a tab pool of `maxPages`. */
   def start(maxPages: Int, headless: Boolean = true): Chrome = {
     val cfg = new Configuration
     cfg.maxPages = maxPages
@@ -61,6 +62,7 @@ object ChromeLauncher {
     var maxPages: Int = 5
   }
 
+  /** Default flags for unattended PDF rendering. */
   def defaultsArgs(headless: Boolean = true): Arguments = {
     val v = new Arguments
     v.noFirstRun()
@@ -81,6 +83,7 @@ object ChromeLauncher {
       .add("remote-debugging-port", "0")
       .add("remote-allow-origins", "*")
       .add("run-all-compositor-stages-before-draw", true)
+      // Chrome 149+ blocks CDP navigation to loopback aliases without this flag.
       .add("disable-features", "LocalNetworkAccessChecks")
 
     if headless then v.headless().disableGpu().hideScrollbars().muteAudio()
@@ -96,7 +99,8 @@ object ChromeLauncher {
       this
     }
 
-    def headless(v: Boolean = true): Arguments = add("headless", v)
+    /** @param mode "new" for Chrome's current headless implementation (recommended). */
+    def headless(mode: String = "new"): Arguments = add("headless", mode)
 
     def remoteDebuggingPort(port: Int): Arguments = add("remote-debugging-port", port)
 
@@ -194,6 +198,7 @@ class ChromeLauncher(config: Configuration) {
       case None => throw new RuntimeException("Cannot find executable chrome")
   }
 
+  /** Parse DevTools port from process stdout, then hand off to Chrome. */
   def launch(chromeBinary: Path, arguments: Arguments): Chrome = {
     if (isAlive) throw new IllegalStateException("Chrome process has already been started.")
     if (arguments.getUserDataDir().isEmpty) {

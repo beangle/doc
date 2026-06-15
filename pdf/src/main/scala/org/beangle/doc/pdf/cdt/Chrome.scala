@@ -28,9 +28,10 @@ import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 
-/** Chrome DevTools Client */
+/** Chrome DevTools client: one browser process, pooled tabs for concurrent PDF export. */
 class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
 
+  /** Idle tabs ready for reuse; capacity equals maxPages. */
   private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxPages)
 
   private val pageIdGenerator = new AtomicInteger(1)
@@ -41,6 +42,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
 
   collectPages()
 
+  /** Navigate on a pooled tab; on failure the tab is discarded instead of returned to the pool. */
   def open(url: String): ChromePage = {
     val p = findOrCreatePage()
     try
@@ -52,6 +54,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
         throw e
   }
 
+  /** Return a tab to the pool, or close it when the pool is full. Never throws. */
   def close(p: ChromePage): Unit = {
     if null == p then return
     try
@@ -103,6 +106,7 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
   }
 
   private def discardPage(p: ChromePage): Unit = {
+    // Close the CDP socket and remove the browser tab via HTTP /json/close.
     try
       p.close()
       closeTab(p.pageId)

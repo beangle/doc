@@ -22,12 +22,14 @@ import org.beangle.doc.pdf.Logger
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
+/** One browser tab connected over CDP WebSocket. */
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   private val socket = WebSocket(socketUrl)
   private var frameId: String = _
   private var loadLatch: CountDownLatch = _
   private var enabled: Boolean = _
 
+  /** Max wait after load for async requests to finish (dynamic pages). */
   private val NetworkIdleTimeout = Duration.ofSeconds(30)
 
   def enable(): Unit = {
@@ -37,6 +39,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
       enabled = true
   }
 
+  /** Wait for loadEventFired, then networkIdle, before returning. Handlers are per-navigation. */
   def navigate(url: String): String = {
     if null != loadLatch then loadLatch.await()
     loadLatch = new CountDownLatch(1)
@@ -53,6 +56,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
 
     try {
       acceptEvents = true
+      // Loopback aliases are rewritten to data: URLs to avoid Chrome LNA navigation blocks.
       val r = socket.invoke("Page.navigate", Map("url" -> LoopbackUrl.navigateUrl(url)))
       if r.isOk then frameId = (r.result \ "frameId").toString
       else frameId = null
@@ -65,6 +69,7 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
     }
   }
 
+  /** Calls Page.printToPDF; renderDelay is an extra settle time after navigation. */
   def printToPDF(params: Map[String, Any], renderDelay: Duration): (String, String) = {
     if (null == frameId) {
       ("", "Cannot open page")
