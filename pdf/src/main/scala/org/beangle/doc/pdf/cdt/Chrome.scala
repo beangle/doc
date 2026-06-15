@@ -17,7 +17,6 @@
 
 package org.beangle.doc.pdf.cdt
 
-import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.io.IOs
 import org.beangle.commons.json.Json
 import org.beangle.doc.pdf.Logger
@@ -26,17 +25,16 @@ import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, URI}
 import java.text.MessageFormat
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.ReentrantLock
 
-/** Chrome DevTools client: one browser process, pooled tabs for concurrent PDF export. */
-class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
+/** Chrome DevTools client: one browser process with a tab reuse pool. */
+class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdles: Int) {
 
-  /** Idle tabs ready for reuse; capacity equals maxPages. */
-  private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxPages)
+  require(maxIdles > 0)
+
+  /** Max idle tabs kept for reuse; excess tabs are closed on return. */
+  private val freePages = new java.util.concurrent.ArrayBlockingQueue[ChromePage](maxIdles)
 
   private val pageIdGenerator = new AtomicInteger(1)
-
-  private val lock = new ReentrantLock()
 
   private def nextPageIndex(): Int = pageIdGenerator.getAndIncrement()
 
@@ -65,12 +63,10 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
 
   def exit(): Unit = {
     try
-      Locks.withLock(lock) {
-        var p = freePages.poll()
-        while (null != p) {
-          p.close()
-          p = freePages.poll()
-        }
+      var p = freePages.poll()
+      while (null != p) {
+        p.close()
+        p = freePages.poll()
       }
     catch
       case e: Throwable => Logger.debug(s"Exit free pages ignored: ${e.getMessage}")
@@ -95,18 +91,15 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxPages: Int) {
   }
 
   private def findOrCreatePage(): ChromePage = {
-    Locks.withLock(lock) {
-      val p = freePages.poll()
-      if (null != p) then p
-      else
-        val page = createPage()
-        page.enable()
-        page
-    }
+    val p = freePages.poll()
+    if (null != p) then p
+    else
+      val page = createPage()
+      page.enable()
+      page
   }
 
   private def discardPage(p: ChromePage): Unit = {
-    // Close the CDP socket and remove the browser tab via HTTP /json/close.
     try
       p.close()
       closeTab(p.pageId)

@@ -19,15 +19,12 @@ package org.beangle.doc.pdf.cdt
 
 import org.beangle.commons.codec.binary.Base64
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.core.{Orientation, PrintOptions}
 import org.beangle.doc.pdf.{Logger, PdfMaker}
 
 import java.io.File
 import java.net.URI
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.ReentrantLock
 
 object ChromePdfMaker {
   def isAvailable: Boolean = {
@@ -35,48 +32,28 @@ object ChromePdfMaker {
   }
 }
 
-/** PdfMaker backed by headless Chrome via CDP.
- *
- * Keeps one Chrome process alive and reuses tabs from a page pool (`Chrome`). Safe for concurrent
- * `convert()` from multiple threads; `close()` blocks until all in-flight conversions finish.
- */
+/** PdfMaker backed by headless Chrome via CDP. */
 class ChromePdfMaker extends PdfMaker {
 
-  private val lock = new ReentrantLock()
-
-  /** Wakes threads blocked in `close()` when the last in-flight convert finishes. */
-  private val idle = lock.newCondition()
-
-  private val inFlight = new AtomicInteger(0)
-
-  /** Lazily started; recreated after fatal errors or explicit shutdown. */
+  /** Lazily started; recreated after explicit shutdown or a dead process. */
   private var chrome: Chrome = _
 
-  /** Max idle tabs kept for concurrent convert; should be >= expected parallelism. */
-  var maxPages: Int = 10
+  /** Max idle tabs kept after convert; excess returned tabs are closed. */
+  var maxIdles: Int = 2
 
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
-    inFlight.incrementAndGet()
-    var failed = false
-    try {
+    try
       doConvert(uri, pdf, options)
-    } catch {
+    catch
       case e: Throwable =>
         Logger.error("Convert error", e)
-        failed = true
         false
-    } finally {
-      inFlight.decrementAndGet()
-      Locks.withLock(lock) {
-        // Tear down a broken Chrome when the last task ends; wake close() waiters.
-        if (failed && inFlight.get() == 0) then shutdownChromeUnsafe()
-        else if (null != chrome && !chrome.isAlive) then shutdownChromeUnsafe()
-        if (inFlight.get() == 0) then idle.signalAll()
-      }
-    }
   }
 
-  /** Borrow a tab, navigate, print, then return the tab to the pool. */
+  def close(): Unit = {
+    shutdownChrome()
+  }
+
   private def doConvert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
     var page: ChromePage = null
     var c: Chrome = null
@@ -97,32 +74,19 @@ class ChromePdfMaker extends PdfMaker {
     }
   }
 
-  /** Wait for in-flight conversions, then kill the Chrome process. Never throws. */
-  def close(): Unit = {
-    Locks.withLock(lock) {
-      while (inFlight.get() > 0) {
-        try idle.await()
-        catch
-          case _: InterruptedException =>
-            Thread.currentThread().interrupt()
-            return
-      }
-      shutdownChromeUnsafe()
-    }
-  }
-
   private def getChrome(): Chrome = {
-    Locks.withLock(lock) {
+    val c = chrome
+    if (null == c || !c.isAlive) synchronized {
       if (null == chrome || !chrome.isAlive) {
-        shutdownChromeUnsafe()
-        require(maxPages > 0 && maxPages < 100)
-        chrome = ChromeLauncher.start(maxPages)
+        shutdownChrome()
+        require(maxIdles > 0)
+        chrome = ChromeLauncher.start(maxIdles)
       }
       chrome
-    }
+    } else c
   }
 
-  private def shutdownChromeUnsafe(): Unit = {
+  private def shutdownChrome(): Unit = {
     if (null != chrome) {
       try chrome.exit()
       catch

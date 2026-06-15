@@ -19,7 +19,7 @@ package org.beangle.doc.pdf
 
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
 import org.beangle.commons.bean.{Disposable, Initializing}
-import org.beangle.commons.concurrent.Timers
+import org.beangle.commons.concurrent.{Locks, Timers}
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.core.{Orientation, PrintOptions}
 import org.beangle.doc.pdf.cdt.ChromePdfMaker
@@ -28,7 +28,7 @@ import org.beangle.doc.pdf.wk.WKPdfMaker
 import java.io.File
 import java.net.URI
 import java.time.Duration
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 
 object PdfMakerService {
 
@@ -38,20 +38,26 @@ object PdfMakerService {
 
 /** Container-managed PDF service.
  *
- * Creates PdfMaker in `init()`, shares it across concurrent prints, and calls `maker.close()` after
- * `idleTimeout` when no tasks are in flight. ChromePdfMaker recreates Chrome on the next convert.
+ * Owns print concurrency (`maxCapacity`), idle release, and graceful `destroy()`.
  * Register `destroy()` as the bean teardown hook.
  */
 class PdfMakerService extends Initializing, Disposable {
 
-  /** Max Chrome tabs when ChromePdfMaker is selected; should be >= expected parallelism. */
-  var maxPages: Int = 10
+  /** Max idle Chrome tabs kept for reuse. */
+  var maxIdles: Int = 2
+
+  /** Max concurrent print tasks; additional callers wait on `slotAvailable`. */
+  var maxCapacity: Int = 32
 
   /** Idle time before releasing PdfMaker; reset after each print completes. */
   var idleTimeout: Duration = Duration.ofMinutes(5)
 
-  /** Number of print tasks currently running; idle release runs only when this is 0. */
-  private val inFlight = new AtomicInteger(0)
+  private val lock = new ReentrantLock()
+
+  /** Signaled when a print slot is released or the service is shutting down. */
+  private val slotAvailable = lock.newCondition()
+
+  private var inFlight = 0
 
   private var maker: PdfMaker = _
 
@@ -66,26 +72,33 @@ class PdfMakerService extends Initializing, Disposable {
         return false
       }
     }
-    inFlight.incrementAndGet()
+    acquireSlot()
     try {
       doPrint(this.maker, uri, pdf, options)
     } finally {
-      inFlight.decrementAndGet()
-      // Schedule an idle release; overlapping timers are safe because each checks inFlight == 0.
+      releaseSlot()
       scheduleIdleRelease()
     }
   }
 
-  /** Immediately releases PdfMaker; called when the container destroys this bean. */
   override def destroy(): Unit = {
-    releaseMaker()
+    Locks.withLock(lock) {
+      var interrupted = false
+      while (inFlight > 0 && !interrupted) {
+        try slotAvailable.await()
+        catch
+          case _: InterruptedException =>
+            Thread.currentThread().interrupt()
+            interrupted = true
+      }
+      if (!interrupted) releaseMaker()
+    }
   }
 
   override def init(): Unit = {
-    // Prefer headless Chrome for JS-heavy pages; fall back to wkhtmltopdf.
     if (ChromePdfMaker.isAvailable) {
       val chrome = new ChromePdfMaker
-      chrome.maxPages = maxPages
+      chrome.maxIdles = maxIdles
       this.maker = chrome
     } else if (WKPdfMaker.isAvailable) {
       this.maker = new WKPdfMaker
@@ -94,11 +107,34 @@ class PdfMakerService extends Initializing, Disposable {
     }
   }
 
-  private def scheduleIdleRelease(): Unit = {
-    Timers.setTimeout(idleTimeoutSeconds, () => if (inFlight.get() == 0) releaseMaker())
+  private def acquireSlot(): Unit = {
+    Locks.withLock(lock) {
+      while (inFlight >= maxCapacity) {
+        try slotAvailable.await()
+        catch
+          case _: InterruptedException =>
+            Thread.currentThread().interrupt()
+            throw new RuntimeException("Interrupted waiting for print slot")
+      }
+      inFlight += 1
+    }
   }
 
-  /** Release underlying resources (e.g. Chrome process); keeps the PdfMaker instance for reuse. */
+  private def releaseSlot(): Unit = {
+    Locks.withLock(lock) {
+      inFlight -= 1
+      slotAvailable.signalAll()
+    }
+  }
+
+  private def scheduleIdleRelease(): Unit = {
+    Timers.setTimeout(idleTimeoutSeconds, () =>
+      Locks.withLock(lock) {
+        if (inFlight == 0) releaseMaker()
+      }
+    )
+  }
+
   private def releaseMaker(): Unit = {
     if (null != maker) {
       try maker.close()

@@ -30,10 +30,10 @@ import scala.collection.mutable
 
 object ChromeLauncher {
 
-  /** Start headless Chrome and connect a CDP client with a tab pool of `maxPages`. */
-  def start(maxPages: Int, headless: Boolean = true): Chrome = {
+  /** Start headless Chrome and connect a CDP client. */
+  def start(maxIdles: Int, headless: Boolean = true): Chrome = {
     val cfg = new Configuration
-    cfg.maxPages = maxPages
+    cfg.maxIdles = maxIdles
     val launcher = new ChromeLauncher(cfg)
     val chrome = launcher.launch(headless)
     Logger.debug(chrome.version())
@@ -58,8 +58,8 @@ object ChromeLauncher {
     var shutdownWaitTime = 60
     /** wait time for threads to stop. */
     var threadWaitTime = 5
-    /** max pages */
-    var maxPages: Int = 5
+    /** Max idle tabs kept in the reuse pool. */
+    var maxIdles: Int = 5
   }
 
   /** Default flags for unattended PDF rendering. */
@@ -207,7 +207,7 @@ class ChromeLauncher(config: Configuration) {
     }
     try {
       chromeProcess = Processes.launch(chromeBinary.toString, arguments.build(), pb => pb.redirectErrorStream(true).redirectOutput(Redirect.PIPE))
-      new Chrome(this, "localhost", waitForDevToolsPort(chromeProcess), config.maxPages)
+      new Chrome(this, "localhost", waitForDevToolsPort(chromeProcess), config.maxIdles)
     } catch {
       case e: IOException => throw new RuntimeException("Failed starting chrome process.", e)
       case e: Exception =>

@@ -75,7 +75,7 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
     it("converts news pages concurrently") {
       assume(ChromePdfMaker.isAvailable, "Chrome is not available")
       val maker = new ChromePdfMaker
-      maker.maxPages = urls.length
+      maker.maxIdles = urls.length
       val converter = new SPDConverter(maker)
       try {
         val futures = urls.zipWithIndex.map { case (url, i) =>
