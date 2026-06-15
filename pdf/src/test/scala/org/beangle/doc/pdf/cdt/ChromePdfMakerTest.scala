@@ -17,6 +17,7 @@
 
 package org.beangle.doc.pdf.cdt
 
+import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{PageMargin, PrintOptions}
 import org.beangle.doc.pdf.SPDConverter
 import org.scalatest.funspec.AnyFunSpec
@@ -26,7 +27,7 @@ import java.io.File
 import java.net.URI
 import java.time.Duration
 
-class ChromePdfMakerTest extends AnyFunSpec with Matchers {
+class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
 
   private val urls = Array(
     "https://www.oschina.net/news/248319/docker-24-0-3-released",
@@ -39,7 +40,7 @@ class ChromePdfMakerTest extends AnyFunSpec with Matchers {
     o.scale = 0.8d
     o.margin = PageMargin.Default
     o.pageRanges = Some("1-2")
-    o.renderDelay = Duration.ofSeconds(5)
+    o.renderDelay = Duration.ofSeconds(10)
     o
   }
 
@@ -57,6 +58,7 @@ class ChromePdfMakerTest extends AnyFunSpec with Matchers {
         urls.zipWithIndex.foreach { case (url, i) =>
           val out = new File(outDir, s"temp$i.pdf")
           withClue(s"converting $url: ") {
+            logger.info(s"start convert ${url} to ${out.getAbsolutePath}")
             converter.convert(URI.create(url), out, options) should be(true)
             out.exists() should be(true)
             out.length() should be > 10000L
