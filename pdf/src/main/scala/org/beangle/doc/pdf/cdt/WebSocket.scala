@@ -67,6 +67,13 @@ class WebSocket(uri: URI) {
 
   private var lastId: Int = 0
 
+  def removeHandlers(events: String*): Unit = {
+    events foreach { event =>
+      handlers.subtractOne(event)
+      paramHandlers.subtractOne(event)
+    }
+  }
+
   def addHandler(event: String, handler: () => Unit): Unit = {
     handlers.put(event, handler)
   }

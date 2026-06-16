@@ -43,7 +43,7 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
     o.scale = 0.8d
     o.margin = PageMargin.Default
     o.pageRanges = Some("1-2")
-    o.renderDelay = Duration.ofMillis(200)
+    o.renderDelay = Duration.ofMillis(500)
     o
   }
 

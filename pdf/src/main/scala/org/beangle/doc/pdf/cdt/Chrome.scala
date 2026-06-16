@@ -43,13 +43,14 @@ class Chrome(launcher: ChromeLauncher, host: String, port: Int, maxIdles: Int) {
   /** Navigate on a pooled tab; on failure the tab is discarded instead of returned to the pool. */
   def open(url: String): ChromePage = {
     val p = findOrCreatePage()
-    try
+    try {
       p.navigate(url)
       p
-    catch
+    } catch {
       case e: Throwable =>
         close(p)
         throw e
+    }
   }
 
   /** Return a tab to the pool, or close it when the pool is full. Never throws. */

@@ -47,10 +47,12 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
     var acceptEvents = false
 
     socket.addHandler("Page.loadEventFired", () => {
+      //println(s"Get a Page.loadEventFired ${url}")
       if acceptEvents then loaded = true
     })
     socket.addParamHandler("Page.lifecycleEvent", params => {
       if acceptEvents && loaded && (params \ "name").toString == "networkIdle" && null != loadLatch then
+        //println(s"Get a Page.lifecycleEvent ${url}")
         loadLatch.countDown()
     })
 
@@ -63,8 +65,10 @@ class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
 
       if r.isOk then
         loadLatch.await(NetworkIdleTimeout.toSeconds, TimeUnit.SECONDS)
+      //println(s"Page.navigate ${url}")
       frameId
     } finally {
+      socket.removeHandlers("Page.loadEventFired", "Page.lifecycleEvent")
       loadLatch = null
     }
   }
