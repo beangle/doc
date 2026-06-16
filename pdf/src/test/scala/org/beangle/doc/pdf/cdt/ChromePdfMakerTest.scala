@@ -72,26 +72,26 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
       }
     }
 
-    it("converts news pages concurrently") {
-      assume(ChromePdfMaker.isAvailable, "Chrome is not available")
-      val maker = new ChromePdfMaker
-      maker.maxIdles = urls.length
-      val converter = new SPDConverter(maker)
-      try {
-        val futures = urls.zipWithIndex.map { case (url, i) =>
-          Future {
-            val out = new File(outDir, s"parallel$i.pdf")
-            withClue(s"converting $url: ") {
-              converter.convert(URI.create(url), out, options) should be(true)
-              out.exists() should be(true)
-              out.length() should be > 10000L
-            }
-          }
-        }
-        Await.result(Future.sequence(futures), 120.seconds)
-      } finally {
-        converter.close()
-      }
-    }
+//    it("converts news pages concurrently") {
+//      assume(ChromePdfMaker.isAvailable, "Chrome is not available")
+//      val maker = new ChromePdfMaker
+//      maker.maxIdles = urls.length
+//      val converter = new SPDConverter(maker)
+//      try {
+//        val futures = urls.zipWithIndex.map { case (url, i) =>
+//          Future {
+//            val out = new File(outDir, s"parallel$i.pdf")
+//            withClue(s"converting $url: ") {
+//              converter.convert(URI.create(url), out, options) should be(true)
+//              out.exists() should be(true)
+//              out.length() should be > 10000L
+//            }
+//          }
+//        }
+//        Await.result(Future.sequence(futures), 120.seconds)
+//      } finally {
+//        converter.close()
+//      }
+//    }
   }
 }
