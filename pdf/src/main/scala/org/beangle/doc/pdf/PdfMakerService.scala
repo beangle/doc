@@ -21,6 +21,8 @@ import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
 import org.beangle.commons.bean.{Disposable, Initializing}
 import org.beangle.commons.concurrent.{Locks, Timers}
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.time.Stopwatch
+import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{Orientation, PrintOptions}
 import org.beangle.doc.pdf.cdt.ChromePdfMaker
 import org.beangle.doc.pdf.wk.WKPdfMaker
@@ -41,7 +43,7 @@ object PdfMakerService {
  * Owns print concurrency (`maxCapacity`), idle release, and graceful `destroy()`.
  * Register `destroy()` as the bean teardown hook.
  */
-class PdfMakerService extends Initializing, Disposable {
+class PdfMakerService extends Initializing, Disposable, Logging {
 
   /** Max idle Chrome tabs kept for reuse. */
   var maxIdles: Int = 2
@@ -49,7 +51,7 @@ class PdfMakerService extends Initializing, Disposable {
   /** Max concurrent print tasks; additional callers wait on `slotAvailable`. */
   var maxCapacity: Int = 32
 
-  /** Idle time before releasing PdfMaker; reset after each print completes. */
+  /** Idle time before releasing PdfMaker; timer starts when all in-flight prints complete. */
   var idleTimeout: Duration = Duration.ofMinutes(5)
 
   private val lock = new ReentrantLock()
@@ -74,10 +76,12 @@ class PdfMakerService extends Initializing, Disposable {
     }
     acquireSlot()
     try {
-      doPrint(this.maker, uri, pdf, options)
+      val sw = new Stopwatch(true)
+      val rs = doPrint(this.maker, uri, pdf, options)
+      logger.info(s"Print pdf using ${sw},${Strings.abbreviate(uri.toString, 50)}")
+      rs
     } finally {
       releaseSlot()
-      scheduleIdleRelease()
     }
   }
 
@@ -124,6 +128,7 @@ class PdfMakerService extends Initializing, Disposable {
     Locks.withLock(lock) {
       inFlight -= 1
       slotAvailable.signalAll()
+      if (inFlight == 0) scheduleIdleRelease()
     }
   }
 
