@@ -142,8 +142,10 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     }.distinct.sortBy(-_._1)
 
     mergeGroups.foreach { case (rStart, rEnd) =>
-      runs(rStart).setText(texts.slice(rStart, rEnd + 1).mkString, 0)
-      (rStart + 1 to rEnd).reverse.foreach(p.removeRun)
+      if rEnd > rStart then
+        val tail = Option(DocHelper.readText(runs(rEnd))).getOrElse("")
+        runs(rStart).setText(texts.slice(rStart, rEnd).mkString + tail, 0)
+        (rStart + 1 to rEnd).reverse.foreach(p.removeRun)
     }
   }
 

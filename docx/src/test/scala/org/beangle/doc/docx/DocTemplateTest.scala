@@ -25,6 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, FileOutputStream}
 import java.net.URL
 import java.nio.file.Files
+import java.time.{LocalDate, ZoneId}
 
 import scala.jdk.CollectionConverters.*
 
@@ -273,6 +274,23 @@ class DocTemplateTest extends AnyFunSpec, Matchers {
       val bytes = DocTemplate.process(url, Map("name" -> "Alice"))
       val doc = new XWPFDocument(new ByteArrayInputStream(bytes))
       try doc.getParagraphs.get(0).getText.trim should equal("Alice")
+      finally doc.close()
+    }
+
+    it("mergeRun merges adjacent split placeholders with shared boundary run") {
+      val url = templateUrlRuns(
+        "${apply.alterFrom",
+        "?string(\"yyyy-MM-dd\")",
+        "}至${apply.alterTo",
+        "?string(\"yyyy-MM-dd\")",
+        "}"
+      )
+      val zone = ZoneId.systemDefault()
+      val toDate = (d: LocalDate) => java.util.Date.from(d.atStartOfDay(zone).toInstant)
+      val apply = Map("alterFrom" -> toDate(LocalDate.of(2024, 1, 1)), "alterTo" -> toDate(LocalDate.of(2024, 12, 31)))
+      val bytes = DocTemplate.process(url, Map("apply" -> apply))
+      val doc = new XWPFDocument(new ByteArrayInputStream(bytes))
+      try doc.getParagraphs.get(0).getText.trim should equal("2024-01-01至2024-12-31")
       finally doc.close()
     }
 
