@@ -97,7 +97,7 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
   }
 
   private def fillParagraph(p: XWPFParagraph, data: collection.Map[String, Any]): Unit = {
-    mergeRun(p)
+    mergeScriptRuns(p)
     val runs = p.getRuns
     if runs != null then
       asScala(runs).toSeq.foreach { r => fillin(r, data) }
@@ -121,8 +121,13 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     bos.toByteArray
   }
 
-  /** 合并跨 run 的 `${…}`、`[#…]` 模板片段（Word 常把 `[` 等拆成独立 run）。 */
-  private def mergeRun(p: XWPFParagraph): Unit = {
+  /** 仅合并含 `${…}`、`[#…]` 模板表达式的跨 run 片段（Word 常把 `[` 等拆成独立 run）。
+   *
+   * 不含表达式的 run 不参与合并、原样保留，以便维持段落中其余片段的格式（字体、颜色等）。
+   *
+   * @param p 待处理的段落
+   */
+  private def mergeScriptRuns(p: XWPFParagraph): Unit = {
     val runs = asScala(p.getRuns).toSeq
     if runs.isEmpty then return
 
