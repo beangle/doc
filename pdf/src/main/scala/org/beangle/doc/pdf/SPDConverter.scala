@@ -20,20 +20,20 @@ package org.beangle.doc.pdf
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfReader}
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.core.{Orientation, PrintOptions}
-import org.beangle.doc.pdf.cdt.ChromePdfMaker
-import org.beangle.doc.pdf.wk.WKPdfMaker
 
 import java.io.File
 import java.net.URI
 
+/** Single Page Document(SPD) 转换器
+ */
 object SPDConverter {
-  def getInstance(): SPDConverter = {
-    if (ChromePdfMaker.isAvailable) {
-      new SPDConverter(new ChromePdfMaker)
-    } else if (WKPdfMaker.isAvailable) {
-      new SPDConverter(new WKPdfMaker)
-    } else {
-      throw new RuntimeException("Cannot find suitable PdfMaker")
+
+  def convert(uri: URI, pdf: File, options: PrintOptions): Boolean = {
+    val pdfMaker = PdfMaker.newMaker()
+    try {
+      new SPDConverter(pdfMaker).convert(uri, pdf, options)
+    } finally {
+      pdfMaker.close()
     }
   }
 
@@ -44,10 +44,8 @@ object SPDConverter {
     }
     val url = args(0)
     val pdf = if args.length > 1 then new File(args(1)) else File.createTempFile("doc", ".pdf")
-    val converter = SPDConverter.getInstance()
-    val success = converter.print(URI.create(url), pdf, PrintOptions.defaultOptions)
+    val success = SPDConverter.convert(URI.create(url), pdf, PrintOptions.defaultOptions)
     if (success) println(s"pdf is locate ${pdf.getAbsolutePath}")
-    converter.close()
   }
 }
 

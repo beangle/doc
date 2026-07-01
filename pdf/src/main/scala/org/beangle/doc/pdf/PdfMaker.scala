@@ -18,6 +18,8 @@
 package org.beangle.doc.pdf
 
 import org.beangle.doc.core.PrintOptions
+import org.beangle.doc.pdf.cdt.ChromePdfMaker
+import org.beangle.doc.pdf.wk.WKPdfMaker
 
 import java.io.File
 import java.net.URI
@@ -26,4 +28,17 @@ trait PdfMaker {
   def convert(uri: URI, pdf: File, options: PrintOptions): Boolean
 
   def close(): Unit
+}
+
+object PdfMaker {
+
+  def newMaker(): PdfMaker = {
+    if (ChromePdfMaker.isAvailable) {
+      new ChromePdfMaker
+    } else if (WKPdfMaker.isAvailable) {
+      new WKPdfMaker
+    } else {
+      throw new RuntimeException("Cannot find suitable PdfMaker")
+    }
+  }
 }
