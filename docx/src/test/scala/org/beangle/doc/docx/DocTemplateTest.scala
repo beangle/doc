@@ -303,5 +303,70 @@ class DocTemplateTest extends AnyFunSpec, Matchers {
       try doc.getAllPictures.size() should equal(2)
       finally doc.close()
     }
+
+    it("mergeScriptRuns merges split img directives with sign keys") {
+      val redPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      val bluePng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYGD4DwABBAEAYbF9xgAAAABJRU5ErkJggg=="
+      val url = templateUrlRuns(
+        "a:[#img src=",
+        "sign",
+        "1 height=\"10mm\" width=\"30mm\" /]b:[#img src=",
+        "sign",
+        "2 height=\"10mm\" width=\"30mm\" /]"
+      )
+      val bytes = DocTemplate.process(url, Map("sign1" -> redPng, "sign2" -> bluePng))
+      val doc = new XWPFDocument(new ByteArrayInputStream(bytes))
+      try doc.getAllPictures.size() should equal(2)
+      finally doc.close()
+    }
+
+    it("mergeScriptRuns merges split img directives with text between") {
+      val redPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      val bluePng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYGD4DwABBAEAYbF9xgAAAABJRU5ErkJggg=="
+      val url = templateUrlRuns(
+        "申请人签名：[#img src=",
+        "申请人",
+        "_esign height=\"10mm\" width=\"30mm\" /]",
+        "家长签名：",
+        "[#img src=",
+        "申请人",
+        "_esign",
+        "2",
+        " height=\"10mm\" width=\"30mm\" /]"
+      )
+      val doc = new XWPFDocument(url.openStream())
+      val template = new DocTemplate(doc)
+      val data = Map("申请人_esign" -> redPng, "申请人_esign2" -> bluePng)
+      try {
+        val merged = template.mergeParagraphTexts(doc.getParagraphs.get(0))
+        merged should have size 3
+        merged.last should include("申请人_esign2")
+        val (_, dirs2) = template.extractDirectives(merged.last)
+        dirs2.head.properties("src") should equal("申请人_esign2")
+      } finally doc.close()
+
+      val bytes = DocTemplate.process(url, data)
+      val out = new XWPFDocument(new ByteArrayInputStream(bytes))
+      try out.getAllPictures.size() should equal(2)
+      finally out.close()
+    }
+
+    it("mergeScriptRuns merges split img when boundary run contains following text") {
+      val redPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      val bluePng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYGD4DwABBAEAYbF9xgAAAABJRU5ErkJggg=="
+      val url = templateUrlRuns(
+        "申请人签名：[#img src=",
+        "申请人",
+        "_esign height=\"10mm\" width=\"30mm\" /]家长签名：[#img src=",
+        "申请人",
+        "_esign",
+        "2",
+        " height=\"10mm\" width=\"30mm\" /]"
+      )
+      val bytes = DocTemplate.process(url, Map("申请人_esign" -> redPng, "申请人_esign2" -> bluePng))
+      val doc = new XWPFDocument(new ByteArrayInputStream(bytes))
+      try doc.getAllPictures.size() should equal(2)
+      finally doc.close()
+    }
   }
 }

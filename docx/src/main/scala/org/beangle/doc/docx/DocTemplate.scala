@@ -96,6 +96,12 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     }
   }
 
+  /** 供测试：合并段落后返回各 run 文本。 */
+  private[docx] def mergeParagraphTexts(p: XWPFParagraph): Seq[String] = {
+    mergeScriptRuns(p)
+    asScala(p.getRuns).toSeq.map(r => Option(DocHelper.readText(r)).getOrElse(""))
+  }
+
   private def fillParagraph(p: XWPFParagraph, data: collection.Map[String, Any]): Unit = {
     mergeScriptRuns(p)
     val runs = p.getRuns
@@ -124,6 +130,7 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
   /** 仅合并含 `${…}`、`[#…]` 模板表达式的跨 run 片段（Word 常把 `[` 等拆成独立 run）。
    *
    * 不含表达式的 run 不参与合并、原样保留，以便维持段落中其余片段的格式（字体、颜色等）。
+   * 相邻或重叠的跨 run 区间会先合并（如 1–2 与 2–5 → 1–5），再写入区间首 run，最后从后向前删除多余 run。
    *
    * @param p 待处理的段落
    */
@@ -140,18 +147,36 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     def runIndexAt(pos: Int): Int =
       if pos < 0 then -1 else runStarts.lastIndexWhere(_ <= pos)
 
-    val mergeGroups = findTemplateRegions(full).flatMap { case (start, end) =>
+    val intervals = findTemplateRegions(full).flatMap { case (start, end) =>
       val rStart = runIndexAt(start)
       val rEnd = runIndexAt(math.max(start, end - 1))
       if rStart >= 0 && rEnd > rStart then Some((rStart, rEnd)) else None
-    }.distinct.sortBy(-_._1)
-
-    mergeGroups.foreach { case (rStart, rEnd) =>
-      if rEnd > rStart then
-        val tail = Option(DocHelper.readText(runs(rEnd))).getOrElse("")
-        runs(rStart).setText(texts.slice(rStart, rEnd).mkString + tail, 0)
-        (rStart + 1 to rEnd).reverse.foreach(p.removeRun)
     }
+    if intervals.isEmpty then return
+
+    val merged = mergeRunIntervals(intervals)
+    merged.foreach { case (lo, hi) =>
+      runs(lo).setText(texts.slice(lo, hi + 1).mkString, 0)
+    }
+    val toRemove = merged.flatMap { case (lo, hi) => lo + 1 to hi }.distinct.sorted.reverse
+    toRemove.foreach(p.removeRun)
+  }
+
+  /** 合并重叠或相邻的 run 区间（如 (1,2) 与 (2,5) → (1,5)）。 */
+  private def mergeRunIntervals(intervals: Seq[(Int, Int)]): Seq[(Int, Int)] = {
+    if intervals.isEmpty then return Seq.empty
+    val sorted = intervals.sortBy(_._1)
+    val merged = Collections.newBuffer[(Int, Int)]
+    var (curLo, curHi) = sorted.head
+    sorted.tail.foreach { case (lo, hi) =>
+      if lo <= curHi then curHi = math.max(curHi, hi)
+      else
+        merged.addOne((curLo, curHi))
+        curLo = lo
+        curHi = hi
+    }
+    merged.addOne((curLo, curHi))
+    merged.toSeq
   }
 
   /** 在段落拼接文本中定位需保持完整的模板区间 `[start, end)`。 */
@@ -201,9 +226,9 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
 
     val fillables = Collections.newMap[String, Any]
     directives.foreach {
-      case d @ Directive("img", ph, _, props) =>
+      case d@Directive("img", ph, _, props) =>
         buildPicture(resolveProperties(props, data)).foreach(p => fillables.put(ph, p))
-      case d @ Directive("checkbox", ph, name, _) =>
+      case d@Directive("checkbox", ph, name, _) =>
         name.foreach { n =>
           fillables.put(ph, DocHelper.CheckboxGlyph(resolveCheckbox(n, data)))
         }
@@ -247,8 +272,12 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
       val width = toEmu(props.getOrElse("width", "0"))
       val height = toEmu(props.getOrElse("height", "0"))
       val mediaType = MediaTypes.png
-      val bytes = Base64.decode(src)
-      Some(Picture(new ByteArrayInputStream(bytes), mediaType, generateImgName(mediaType), width, height))
+      try {
+        val bytes = Base64.decode(src)
+        Some(Picture(new ByteArrayInputStream(bytes), mediaType, generateImgName(mediaType), width, height))
+      } catch {
+        case _: Exception => None
+      }
     }
   }
 
@@ -290,7 +319,16 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
 
   private def applySplitRuns(p: XWPFParagraph, firstRun: XWPFRun, components: Seq[Any]): Unit = {
     var pos = p.getRuns.indexOf(firstRun)
-    if pos < 0 then pos = 0
+    if pos < 0 then
+      components.foreach {
+        case s: String => DocHelper.set(firstRun, s)
+        case pic: Picture =>
+          val pictureType = PictureType.valueOf(pic.mediaType.subType.toUpperCase)
+          firstRun.addPicture(pic.is, pictureType, pic.filename, pic.width, pic.height)
+        case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(firstRun, c.checked)
+        case other => DocHelper.set(firstRun, other.toString)
+      }
+      return
     components.zipWithIndex.foreach { case (component, i) =>
       val target =
         if i == 0 then firstRun
