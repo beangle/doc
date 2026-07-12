@@ -78,7 +78,7 @@ class PdfMakerService extends Initializing, Disposable, Logging {
     try {
       val sw = new Stopwatch(true)
       val rs = doPrint(this.maker, uri, pdf, options)
-      logger.info(s"Print pdf using ${sw},${Strings.abbreviate(uri.toString, 50)}")
+      logger.info(s"Print(${sw}),${Strings.abbreviate(uri.toString, 50)}")
       rs
     } finally {
       releaseSlot()
@@ -142,8 +142,10 @@ class PdfMakerService extends Initializing, Disposable, Logging {
 
   private def releaseMaker(): Unit = {
     if (null != maker) {
-      try maker.close()
-      catch
+      try {
+        maker.close()
+        logger.info(s"Close chrome daemon process")
+      } catch
         case e: Throwable => Logger.error("Close PdfMaker error", e)
     }
   }
