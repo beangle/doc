@@ -294,6 +294,19 @@ class DocTemplateTest extends AnyFunSpec, Matchers {
       finally doc.close()
     }
 
+    it("process renders img-only run without leftover placeholder") {
+      val png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      val url = templateUrl("[#img src=sign height=\"10mm\" width=\"10mm\" /]")
+      val bytes = DocTemplate.process(url, Map("sign" -> png))
+      val doc = new XWPFDocument(new ByteArrayInputStream(bytes))
+      try {
+        doc.getAllPictures.size() should equal(1)
+        val text = doc.getParagraphs.get(0).getText
+        text should not include "#img"
+        text should not include "[#img"
+      } finally doc.close()
+    }
+
     it("process renders two img directives in one paragraph") {
       val redPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
       val bluePng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYGD4DwABBAEAYbF9xgAAAABJRU5ErkJggg=="

@@ -304,13 +304,14 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
 
   /** 按片段写入 run；含复选框或图片时拆成多个 run（字体不同）。 */
   private def applyFill(run: XWPFRun, components: Seq[Any]): Unit = {
-    val needsSplit = components.size > 1 || components.exists {
-      case _: DocHelper.CheckboxGlyph | _: Picture => true
-      case _ => false
-    }
-    if !needsSplit then
-      components.headOption foreach {
+    if components.isEmpty then return
+    if components.size == 1 then
+      components.head match {
         case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(run, c.checked)
+        case pic: Picture =>
+          DocHelper.set(run, "")
+          val pictureType = PictureType.valueOf(pic.mediaType.subType.toUpperCase)
+          run.addPicture(pic.is, pictureType, pic.filename, pic.width, pic.height)
         case other => DocHelper.set(run, other.toString)
       }
     else
@@ -319,16 +320,18 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
 
   private def applySplitRuns(p: XWPFParagraph, firstRun: XWPFRun, components: Seq[Any]): Unit = {
     var pos = p.getRuns.indexOf(firstRun)
-    if pos < 0 then
+    if (pos < 0) {
       components.foreach {
         case s: String => DocHelper.set(firstRun, s)
         case pic: Picture =>
+          DocHelper.set(firstRun, "")
           val pictureType = PictureType.valueOf(pic.mediaType.subType.toUpperCase)
           firstRun.addPicture(pic.is, pictureType, pic.filename, pic.width, pic.height)
         case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(firstRun, c.checked)
         case other => DocHelper.set(firstRun, other.toString)
       }
       return
+    }
     components.zipWithIndex.foreach { case (component, i) =>
       val target =
         if i == 0 then firstRun
@@ -339,6 +342,7 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
       component match {
         case s: String => DocHelper.set(target, s)
         case pic: Picture =>
+          DocHelper.set(target, "")
           val pictureType = PictureType.valueOf(pic.mediaType.subType.toUpperCase)
           target.addPicture(pic.is, pictureType, pic.filename, pic.width, pic.height)
         case c: DocHelper.CheckboxGlyph => DocHelper.applyCheckbox(target, c.checked)
