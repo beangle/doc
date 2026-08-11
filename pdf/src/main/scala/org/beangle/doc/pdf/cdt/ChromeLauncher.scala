@@ -31,24 +31,26 @@ import scala.collection.mutable
 object ChromeLauncher {
 
   /** Start headless Chrome and connect a CDP client. */
-  def start(maxIdles: Int, headless: Boolean = true): Chrome = {
+  def start(maxIdles: Int): Chrome = {
     val cfg = new Configuration
     cfg.maxIdles = maxIdles
     val launcher = new ChromeLauncher(cfg)
-    val chrome = launcher.launch(headless)
+    val chrome = launcher.launch()
     Logger.debug(chrome.version())
     chrome
   }
 
+  /** Find the standalone chrome-headless-shell binary.
+    *
+    * Checked in order: CHROME_HEADLESS_SHELL_PATH env, then common install paths
+    * (Chrome for Testing under /opt, Debian package, Fedora/EPEL package).
+    */
   def findChrome(): Option[Path] = {
-    Processes.find("CHROME_PATH", Array("/usr/bin/chromium",
-      "/usr/bin/chromium-browser",
-      "/usr/bin/google-chrome",
-      "/snap/bin/chromium",
-      "/Applications/Chromium.app/Contents/MacOS/Chromium",
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-      "C:/Program Files/Google/Chrome/Application/chrome.exe"))
+    Processes.find("CHROME_HEADLESS_SHELL_PATH", Array(
+      "/opt/chrome-headless-shell/chrome-headless-shell-linux64/chrome-headless-shell",
+      "/usr/bin/chromium-headless-shell",
+      "/usr/lib/chromium/chromium-headless-shell",
+      "/usr/lib64/chromium-browser/headless_shell"))
   }
 
   class Configuration {
@@ -62,8 +64,11 @@ object ChromeLauncher {
     var maxIdles: Int = 5
   }
 
-  /** Default flags for unattended PDF rendering. */
-  def defaultsArgs(headless: Boolean = true): Arguments = {
+  /** Default flags for unattended PDF rendering.
+    *
+    * chrome-headless-shell is always headless, so no --headless switch is passed.
+    */
+  def defaultsArgs(): Arguments = {
     val v = new Arguments
     v.noFirstRun()
       .noDefaultBrowserCheck()
@@ -86,7 +91,7 @@ object ChromeLauncher {
       // Chrome 149+ blocks CDP navigation to loopback aliases without this flag.
       .add("disable-features", "LocalNetworkAccessChecks")
 
-    if headless then v.headless().disableGpu().hideScrollbars().muteAudio()
+    v.disableGpu().hideScrollbars().muteAudio()
     v
   }
 
@@ -98,9 +103,6 @@ object ChromeLauncher {
       args.put(key, value)
       this
     }
-
-    /** @param mode "new" for Chrome's current headless implementation (recommended). */
-    def headless(mode: String = "new"): Arguments = add("headless", mode)
 
     def remoteDebuggingPort(port: Int): Arguments = add("remote-debugging-port", port)
 
@@ -188,14 +190,16 @@ class ChromeLauncher(config: Configuration) {
 
   private var userDataDirPath: Path = _
 
-  def launch(headless: Boolean): Chrome = {
-    launch(ChromeLauncher.defaultsArgs(headless))
+  def launch(): Chrome = {
+    ChromeLauncher.findChrome() match
+      case Some(p) => launch(p, ChromeLauncher.defaultsArgs())
+      case None => throw new RuntimeException("Cannot find chrome-headless-shell executable")
   }
 
   def launch(arguments: Arguments): Chrome = {
     ChromeLauncher.findChrome() match
       case Some(p) => launch(p, arguments)
-      case None => throw new RuntimeException("Cannot find executable chrome")
+      case None => throw new RuntimeException("Cannot find chrome-headless-shell executable")
   }
 
   /** Parse DevTools port from process stdout, then hand off to Chrome. */
