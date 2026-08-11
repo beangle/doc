@@ -1,27 +1,27 @@
 import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
 
-ThisBuild / organization := "org.beangle.doc"
-ThisBuild / version := "0.5.11-SNAPSHOT"
+organization := "org.beangle.doc"
+version := "0.5.11-SNAPSHOT"
 
-ThisBuild / scmInfo := Some(
+scmInfo := Some(
   ScmInfo(
-    url("https://github.com/beangle/doc"),
+    uri("https://github.com/beangle/doc"),
     "scm:git@github.com:beangle/doc.git"
   )
 )
 
-ThisBuild / developers := List(
+developers := List(
   Developer(
     id = "chaostone",
     name = "Tihua Duan",
     email = "duantihua@gmail.com",
-    url = url("http://github.com/duantihua")
+    url = uri("http://github.com/duantihua")
   )
 )
 
-ThisBuild / description := "The Beangle Doc Library"
-ThisBuild / homepage := Some(url("https://beangle.github.io/doc/index.html"))
+description := "The Beangle Doc Library"
+homepage := Some(uri("https://beangle.github.io/doc/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.1"
 val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.8"
