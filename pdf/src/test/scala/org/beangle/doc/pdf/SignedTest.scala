@@ -23,6 +23,8 @@ import org.scalatest.matchers.should.Matchers
 
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import scala.collection.mutable
 
 class SignedTest extends AnyFunSpec with Matchers {
 
@@ -81,10 +83,22 @@ class SignedTest extends AnyFunSpec with Matchers {
     }
   }
 
+  private val resourceFiles = mutable.Map.empty[String, File]
+
+  /** Materialize a classpath resource to a temporary file.
+    *
+    * Classpath resources may live inside jars (sbt 2 caches build outputs in
+    * its content-addressed store), so they cannot be resolved as plain files.
+    */
   private def resourceFile(name: String): File = {
-    ClassLoaders.getResource(name) match {
-      case Some(url) => new File(url.toURI)
-      case None => throw IllegalArgumentException(s"Cannot find resource file ${name}")
-    }
+    resourceFiles.getOrElseUpdate(name, {
+      val in = ClassLoaders.getResourceAsStream(name).getOrElse(throw IllegalArgumentException(s"Cannot find resource file $name"))
+      try {
+        val temp = Files.createTempFile("signed-", s"-$name").toFile
+        Files.copy(in, temp.toPath, StandardCopyOption.REPLACE_EXISTING)
+        temp.deleteOnExit()
+        temp
+      } finally in.close()
+    })
   }
 }
