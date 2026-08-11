@@ -32,7 +32,7 @@ val itext_forms = "com.itextpdf" % "forms" % "9.7.1"
 val itext_sign = "com.itextpdf" % "sign" % "9.7.1"
 
 lazy val root = (project in file("."))
-  .settings(common)
+  .settings(common,publish / skip := true)
   .aggregate(html, docx, pdf, excel)
 
 lazy val html = (project in file("html"))
@@ -68,4 +68,4 @@ lazy val pdf = (project in file("pdf"))
     libraryDependencies ++= Seq(itext_kernel, itext_layout, itext_forms, itext_sign, itext_bouncy_castle_adapter, jna),
     libraryDependencies ++= Seq(websocket_tyrus_client)
   )
-publish / skip := true
+
