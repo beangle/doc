@@ -17,6 +17,7 @@
 
 package org.beangle.doc.pdf.cdt
 
+import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.doc.core.{PageMargin, PrintOptions}
 import org.beangle.doc.pdf.SPDConverter
@@ -61,8 +62,9 @@ class ChromePdfMakerTest extends AnyFunSpec, Matchers, Logging {
         urls.zipWithIndex.foreach { case (url, i) =>
           val out = new File(outDir, s"temp$i.pdf")
           withClue(s"converting $url: ") {
-            logger.info(s"start convert ${url} to ${out.getAbsolutePath}")
+            val sw = new Stopwatch(true)
             converter.convert(URI.create(url), out, options) should be(true)
+            logger.info(s"start convert ${url} to ${out.getAbsolutePath} using ${sw}")
             out.exists() should be(true)
           }
         }
