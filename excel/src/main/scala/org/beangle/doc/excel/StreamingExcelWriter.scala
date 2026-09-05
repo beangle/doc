@@ -53,7 +53,7 @@ import scala.util.Using
  * }
  * </pre>
  */
-class StreamingExcelWriter(val windowSize: Int = 100) extends AutoCloseable {
+class StreamingExcelWriter(val windowSize: Int = 100, val countPerSheet: Int = 100000) extends AutoCloseable {
 
   private val workbook = new SXSSFWorkbook(windowSize)
   workbook.setCompressTempFiles(true)
@@ -61,17 +61,19 @@ class StreamingExcelWriter(val windowSize: Int = 100) extends AutoCloseable {
 
   private val sheets = new scala.collection.mutable.ArrayBuffer[StreamingSheet]
   private var _currentSheet: StreamingSheet = _
-
+  //写入数据的行署，不含标题、caption
+  private var dataRowCount = 0
   // 构造时确保有一个默认 Sheet
   if (workbook.getNumberOfSheets == 0) addSheet(null)
 
   /** 创建新 Sheet 并切换为当前活跃 Sheet。name 为 null 或空时由 POI 自动生成名称。 */
-  def addSheet(name: String): Unit = {
+  private def addSheet(name: String): Unit = {
     val sxssfSheet =
       if (name == null || name.isBlank) workbook.createSheet()
       else workbook.createSheet(name)
     val sheet = new StreamingSheet(workbook, sxssfSheet)(registry)
     sheets += sheet
+    dataRowCount = 0
     _currentSheet = sheet
   }
 
@@ -86,7 +88,8 @@ class StreamingExcelWriter(val windowSize: Int = 100) extends AutoCloseable {
 
   /** 写入表头行（委托当前 Sheet） */
   def writeHeaders(headers: String*): this.type = {
-    _currentSheet.writeHeaders(headers *); this
+    _currentSheet.writeHeaders(headers *);
+    this
   }
 
   /** 写入表头行（指定样式，委托当前 Sheet） */
@@ -104,17 +107,24 @@ class StreamingExcelWriter(val windowSize: Int = 100) extends AutoCloseable {
 
   /** 写入一行数据（委托当前 Sheet） */
   def writeRow(values: Any*): this.type = {
-    _currentSheet.writeRow(values *); this
+    if (countPerSheet > 0 && dataRowCount >= countPerSheet) {
+      addSheet(null)
+    }
+    _currentSheet.writeRow(values *)
+    dataRowCount += 1
+    this
   }
 
   /** 设置列宽（委托当前 Sheet） */
   def setColumnWidths(widths: Int*): this.type = {
-    _currentSheet.setColumnWidths(widths *); this
+    _currentSheet.setColumnWidths(widths *);
+    this
   }
 
   /** 冻结窗格（委托当前 Sheet） */
   def freezePane(colSplit: Int, rowSplit: Int): this.type = {
-    _currentSheet.freezePane(colSplit, rowSplit); this
+    _currentSheet.freezePane(colSplit, rowSplit);
+    this
   }
 
   /** 获取底层 Workbook（高级用法） */
@@ -155,7 +165,6 @@ class StreamingSheet(private[excel] val workbook: SXSSFWorkbook,
                     (implicit val registry: ExcelStyleRegistry = new ExcelStyleRegistry(workbook)) {
 
   private var currentRowNum = 0
-  private var headerRowNum = -1
 
   /** 获取 Sheet 名称 */
   def getSheetName: String = sheet.getSheetName
@@ -182,7 +191,6 @@ class StreamingSheet(private[excel] val workbook: SXSSFWorkbook,
     }
     widths.zipWithIndex.foreach { (w, i) => sheet.setColumnWidth(i, w * 256) }
     rowHeight.foreach(h => row.setHeight(h))
-    headerRowNum = currentRowNum
     currentRowNum += 1
     this
   }
