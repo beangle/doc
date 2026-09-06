@@ -32,7 +32,7 @@ import scala.util.Using
  *
  * <h3>基本用法</h3>
  * <pre>
- * Using.resource(new StreamingExcelWriter()) { writer =>
+ * Using.resource(new StreamingWriter()) { writer =>
  * writer.writeHeaders("姓名", "年龄", "部门")
  * empList.foreach(emp => writer.writeRow(emp.name, emp.age, emp.dept))
  * writer.save("employees.xlsx")

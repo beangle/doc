@@ -301,7 +301,6 @@ class DocTemplate(doc: XWPFDocument, interpreter: TemplateInterpreter = DefaultT
     else s"$${(($name)!false)?c}"
   }
 
-
   /** 按片段写入 run；含复选框或图片时拆成多个 run（字体不同）。 */
   private def applyFill(run: XWPFRun, components: Seq[Any]): Unit = {
     if components.isEmpty then return
