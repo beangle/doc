@@ -18,11 +18,16 @@
 package org.beangle.doc.excel.stream
 
 import org.apache.poi.openxml4j.opc.OPCPackage
+import org.apache.poi.ss.usermodel.DateUtil
 import org.apache.poi.xssf.eventusermodel.{ReadOnlySharedStringsTable, XSSFReader}
+import org.beangle.commons.conversion.string.{BooleanConverter, TemporalConverter}
 import org.beangle.commons.io.DataType
+import org.beangle.commons.lang.Numbers
 import org.beangle.commons.xml.{Document, Element, Node, Text}
 
 import java.io.InputStream
+import java.text.NumberFormat
+import java.time.*
 import javax.xml.stream.{XMLInputFactory, XMLStreamConstants}
 import scala.collection.mutable
 
@@ -147,18 +152,23 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
   }
 
   private def readCellValue(cellType: String): Any = {
-    var value = ""
+    val value = new StringBuilder
+    var keep = false
     var done = false
     while (!done && staxReader.hasNext) {
       staxReader.next() match {
-        case XMLStreamConstants.CHARACTERS =>
-          value += staxReader.getText
+        case XMLStreamConstants.START_ELEMENT if staxReader.getLocalName == "v" || staxReader.getLocalName == "is" =>
+          keep = true
+        case XMLStreamConstants.END_ELEMENT if staxReader.getLocalName == "v" || staxReader.getLocalName == "is" =>
+          keep = false
+        case XMLStreamConstants.CHARACTERS if keep =>
+          value.append(staxReader.getText)
         case XMLStreamConstants.END_ELEMENT if staxReader.getLocalName == "c" =>
           done = true
         case _ =>
       }
     }
-    parseCellValue(value.trim, cellType)
+    parseCellValue(value.toString.trim, cellType)
   }
 
   private def parseCellValue(value: String, cellType: String): Any = {
@@ -171,8 +181,9 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
         } catch {
           case _: NumberFormatException => value
         }
-      case "b" =>
-        value == "1"
+      case "str" | "inlineStr" => value
+      case "b" => value == "1"
+      case "e" => null
       case _ =>
         try value.toDouble catch { case _: NumberFormatException => value }
     }
@@ -181,38 +192,77 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
   private def convertValue(value: Any, dataType: DataType): Any = {
     if (value == null) return null
     dataType match {
-      case DataType.String => value.toString
-      case DataType.Integer => value match {
-        case d: java.lang.Double => d.intValue()
-        case n: Number => n.intValue()
-        case s: String => try s.toInt catch { case _: Exception => s }
-        case v => v.toString.toInt
-      }
-      case DataType.Long => value match {
-        case d: java.lang.Double => d.longValue()
-        case n: Number => n.longValue()
-        case s: String => try s.toLong catch { case _: Exception => s }
-        case v => v.toString.toLong
-      }
-      case DataType.Double => value match {
-        case d: java.lang.Double => d
-        case n: Number => n.doubleValue()
-        case s: String => try s.toDouble catch { case _: Exception => s }
-        case v => v.toString.toDouble
-      }
-      case DataType.Float => value match {
-        case d: java.lang.Double => d.floatValue()
-        case n: Number => n.floatValue()
-        case s: String => try s.toFloat catch { case _: Exception => s }
-        case v => v.toString.toFloat
-      }
-      case DataType.Boolean => value match {
-        case b: java.lang.Boolean => b
-        case s: String => s == "true" || s == "1" || s == "Y"
-        case d: java.lang.Double => d != 0
-        case v => v.toString.toBoolean
-      }
-      case _ => value.toString
+      case DataType.String => asString(value)
+      case DataType.Boolean => toBoolean(value)
+      case DataType.Short => toNumber(value, _.shortValue(), s => Numbers.convert2Short(s))
+      case DataType.Integer => toNumber(value, _.intValue(), s => Numbers.convert2Int(s))
+      case DataType.Long => toNumber(value, _.longValue(), s => Numbers.convert2Long(s))
+      case DataType.Float => toNumber(value, _.floatValue(), s => Numbers.convert2Float(s))
+      case DataType.Double => toNumber(value, _.doubleValue(), s => Numbers.convert2Double(s))
+      case DataType.Date | DataType.Time | DataType.DateTime | DataType.YearMonth | DataType.MonthDay | DataType.Instant | DataType.OffsetDateTime =>
+        toTemporal(value, dataType)
+      case _ => asString(value)
+    }
+  }
+
+  /** 转成文本：数字按无千分位格式输出，布尔按 Y/N 输出（与写入侧保持一致）。 */
+  private def asString(value: Any): String = {
+    value match {
+      case s: String => s
+      case b: java.lang.Boolean => if (b) "Y" else "N"
+      case d: java.lang.Double => StreamingReader.NumFormat.format(d)
+      case v => v.toString
+    }
+  }
+
+  private def toBoolean(value: Any): Boolean = {
+    value match {
+      case b: java.lang.Boolean => b
+      case n: Number => n.doubleValue() != 0
+      case s: String => BooleanConverter(s)
+      case v => BooleanConverter(v.toString)
+    }
+  }
+
+  private def toNumber(value: Any, fromNumber: Number => Any, fromText: String => Any): Any = {
+    value match {
+      case n: Number => fromNumber(n)
+      case s: String => fromText(s)
+      case v => v.toString
+    }
+  }
+
+  /** 时间类类型：文本按声明的 Temporal 解析；数值按 Excel 序列号还原。 */
+  private def toTemporal(value: Any, dataType: DataType): Any = {
+    value match {
+      case s: String =>
+        dataType match {
+          case DataType.Date => TemporalConverter.ToLocalDate(s)
+          case DataType.Time => TemporalConverter.ToLocalTime(s)
+          case DataType.DateTime => TemporalConverter.ToLocalDateTime(s)
+          case DataType.YearMonth => TemporalConverter.ToYearMonth(s)
+          case DataType.MonthDay => TemporalConverter.ToMonthDay(s)
+          case DataType.Instant => TemporalConverter.ToInstant(s)
+          case DataType.OffsetDateTime => TemporalConverter.ToOffsetDateTime(s)
+          case _ => s
+        }
+      case d: java.lang.Double =>
+        if (DateUtil.isValidExcelDate(d)) toDateValue(DateUtil.getJavaDate(d), dataType)
+        else StreamingReader.NumFormat.format(d)
+      case _ => asString(value)
+    }
+  }
+
+  private def toDateValue(date: java.util.Date, dataType: DataType): Any = {
+    dataType match {
+      case DataType.Date => new java.sql.Date(date.getTime).toLocalDate
+      case DataType.Time => date.toInstant.atZone(ZoneId.systemDefault).toLocalTime
+      case DataType.DateTime => date.toInstant.atZone(ZoneId.systemDefault).toLocalDateTime
+      case DataType.YearMonth => YearMonth.from(new java.sql.Date(date.getTime).toLocalDate)
+      case DataType.MonthDay => MonthDay.from(new java.sql.Date(date.getTime).toLocalDate)
+      case DataType.Instant => date.toInstant
+      case DataType.OffsetDateTime => date.toInstant.atOffset(ZoneOffset.UTC)
+      case _ => date
     }
   }
 
@@ -250,4 +300,10 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
     case t: Text => t.text
     case _ => ""
   }
+}
+
+object StreamingReader {
+  private val NumFormat = NumberFormat.getNumberInstance
+  NumFormat.setMinimumFractionDigits(0)
+  NumFormat.setGroupingUsed(false)
 }
