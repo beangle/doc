@@ -31,6 +31,7 @@ object UpdateCellDirective {
 
 }
 
+/** jx:updateCell：复制前调用 updater 指定的 CellDataUpdater 调整单元格数据。 */
 class UpdateCellDirective(area: Area) extends AbstractDirective {
   var updater: String = null
   var cellDataUpdater: CellDataUpdater = null

@@ -84,6 +84,7 @@ object FormulaProcessor {
 
 }
 
+/** 公式改写处理器：把模板公式中的源单元格引用改写为展开后各目标单元格（含 U_() 联合引用、BY_COLUMN 等策略）。 */
 trait FormulaProcessor {
   /** Processes area formulas
    */
@@ -99,8 +100,13 @@ trait FormulaProcessor {
       val pos = CellRef(cellRef)
       if (pos.isValid) {
         if (pos.sheetName == null) pos.sheetName = formulaCellData.sheetName
-        val targetCellDataList = transformer.getCellData(pos).orNull.targetPos
-        if (targetCellDataList.isEmpty && area != null && !area.getAreaRef.contains(pos)) targetCellDataList.addOne(pos)
+        val targetCellDataList = transformer.getCellData(pos) match {
+          case Some(cd) =>
+            val list = cd.targetPos
+            if (list.isEmpty && area != null && !area.getAreaRef.contains(pos)) list.addOne(pos)
+            list
+          case None => mutable.ArrayBuffer(pos)
+        }
         targetCellRefMap.put(pos, targetCellDataList)
       }
     }
@@ -120,8 +126,7 @@ trait FormulaProcessor {
       for (cellRef <- nestedCellRefs) {
         val pos = CellRef(cellRef)
         if (pos.sheetName == null) pos.sheetName = formulaCellData.sheetName
-        val targetCellDataList = transformer.getCellData(pos).orNull.targetPos
-        jointedCellRefList.addAll(targetCellDataList)
+        transformer.getCellData(pos) foreach { cd => jointedCellRefList.addAll(cd.targetPos) }
       }
       jointedCellRefMap.put(jointedCellRef, jointedCellRefList)
     }

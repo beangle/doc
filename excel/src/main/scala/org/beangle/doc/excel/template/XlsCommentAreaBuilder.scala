@@ -29,6 +29,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.{Matcher, Pattern}
 import scala.collection.mutable
 
+/**
+ * 从模板单元格批注构建区域树：识别顶层 jx:area 与嵌套指令，并将指令挂到所属最小区域。
+ *
+ * 批注按行解析，属性值需带引号，例如 jx:each(items="departments", var="dep", lastCell="D4")。
+ */
 class XlsCommentAreaBuilder(val transformer: Transformer, val clearTemplateCells: Boolean = true) {
   private val logger = LoggerFactory.getLogger(classOf[XlsCommentAreaBuilder])
 

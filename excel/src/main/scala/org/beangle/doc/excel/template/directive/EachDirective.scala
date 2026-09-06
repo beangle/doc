@@ -19,6 +19,7 @@ package org.beangle.doc.excel.template.directive
 
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.bean.orderings.PropertyOrdering
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.script.ExprEvaluator
 import org.beangle.doc.excel.template.*
 import org.beangle.doc.excel.template.directive.EachDirective.*
@@ -36,9 +37,21 @@ object EachDirective {
     case Right, Down
   }
 
-  case class GroupData(item: Any, items: Iterable[_])
+case class GroupData(item: Any, items: Iterable[_])
 }
 
+/**
+ * jx:each 循环展开指令。
+ *
+ * 常用属性：
+ *  - items: 数据集合表达式（数组、java Collection 或 scala Iterable）
+ *  - var: 循环变量名（可用 var_idx 取下标）
+ *  - direction: Down(默认，向下展开)/Right(向右展开)
+ *  - select: 过滤表达式，为 false 时跳过当前项
+ *  - groupBy/groupOrder/orderBy: 分组与排序属性
+ *  - multisheet: 上下文中的 sheet 名称集合变量，逐项生成多个 sheet
+ *  - pageable: 自动插入分页行分隔符
+ */
 class EachDirective(var `var`: String, var items: String, var area: Area, var direction: Direction = Direction.Down) extends AbstractDirective {
   private val GROUP_DATA_KEY: String = "_group"
   var select: String = null
@@ -85,7 +98,9 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     if (cl == null) return Seq.empty
     val grouped = cl.groupBy(x => Properties.get[Any](x, groupProperty))
     grouped.map { g =>
-      GroupData(g._1, g._2.toBuffer.sorted(new PropertyOrdering(groupOrder)))
+      val items = if (Strings.isNotBlank(groupOrder)) g._2.toBuffer.sorted(new PropertyOrdering(groupOrder))
+      else g._2
+      GroupData(g._1, items)
     }
   }
 
@@ -122,49 +137,53 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     var currentIndex: Int = 0
     var breaked = false
     var index: Int = 0
-    for (obj <- itemsCollection; if !breaked) {
-      context.putVar(varName, obj)
-      context.putVar(varIndex, currentIndex)
-      if (select != null && !context.isTrue(select)) {
-        context.removeVar(varName)
-      } else {
-        if (cellRefGenerator != null) {
-          index += 1
-          currentCell = cellRefGenerator.generateCellRef(index - 1, context)
-        }
-        if (currentCell == null) {
-          breaked = true
+    try {
+      for (obj <- itemsCollection; if !breaked) {
+        context.putVar(varName, obj)
+        context.putVar(varIndex, currentIndex)
+        if (select != null && !context.isTrue(select)) {
+          context.removeVar(varName)
+          context.removeVar(varIndex)
         } else {
-          var size: Size = null
-          try size = area.applyAt(currentCell, context)
-          catch {
-            case e: NegativeArraySizeException =>
-              throw new RuntimeException("Check jx:each/lastCell parameter in template! Illegal area: " + area.getAreaRef, e)
+          if (cellRefGenerator != null) {
+            index += 1
+            currentCell = cellRefGenerator.generateCellRef(index - 1, context)
           }
-          if (cellRefGenerator == null) {
-            if (direction == Direction.Down) {
-              currentCell = new CellRef(currentCell.sheetName, currentCell.row + size.height, currentCell.col)
+          if (currentCell == null) {
+            breaked = true
+          } else {
+            var size: Size = null
+            try size = area.applyAt(currentCell, context)
+            catch {
+              case e: NegativeArraySizeException =>
+                throw new RuntimeException("Check jx:each/lastCell parameter in template! Illegal area: " + area.getAreaRef, e)
+            }
+            if (cellRefGenerator == null) {
+              if (direction == Direction.Down) {
+                currentCell = new CellRef(currentCell.sheetName, currentCell.row + size.height, currentCell.col)
+                newWidth = Math.max(newWidth, size.width)
+                newHeight += size.height
+              } else { // RIGHT
+                currentCell = new CellRef(currentCell.sheetName, currentCell.row, currentCell.col + size.width)
+                newWidth += size.width
+                newHeight = Math.max(newHeight, size.height)
+              }
+            } else {
               newWidth = Math.max(newWidth, size.width)
-              newHeight += size.height
-            } else { // RIGHT
-              currentCell = new CellRef(currentCell.sheetName, currentCell.row, currentCell.col + size.width)
-              newWidth += size.width
               newHeight = Math.max(newHeight, size.height)
             }
-          } else {
-            newWidth = Math.max(newWidth, size.width)
-            newHeight = Math.max(newHeight, size.height)
-          }
-          currentIndex += 1
-          if (pageable && currentIndex < itemsCollection.size) {
-            val sheet = area.transformer.workbook.getSheet(currentCell.sheetName)
-            sheet.setRowBreak(newHeight - 1) // newHeight is 1-based
+            currentIndex += 1
+            if (pageable && currentIndex < itemsCollection.size) {
+              val sheet = area.transformer.workbook.getSheet(currentCell.sheetName)
+              sheet.setRowBreak(newHeight - 1) // newHeight is 1-based
+            }
           }
         }
       }
+    } finally {
+      restoreVarObject(context, varIndex, currentVarIndexObject)
+      restoreVarObject(context, varName, currentVarObject)
     }
-    restoreVarObject(context, varIndex, currentVarIndexObject)
-    restoreVarObject(context, varName, currentVarObject)
     new Size(newWidth, newHeight)
   }
 

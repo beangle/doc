@@ -18,7 +18,7 @@
 package org.beangle.doc.excel.template
 
 import org.apache.poi.ss.usermodel.*
-import org.apache.poi.ss.util.{CellAddress, CellRangeAddress}
+import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.streaming.SXSSFWorkbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
@@ -62,8 +62,15 @@ object DefaultTransformer {
   }
 }
 
+/**
+ * 基于 XSSFWorkbook（或流式输出时的 SXSSFWorkbook）的默认转换器：
+ * 负责单元格复制、区域清除、合并区域/条件格式维护、公式写入与行高列宽同步。
+ */
 class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
-  var lastCommentedColumn = 50
+  /** 兼容保留：<=0 表示不限制扫描列数（默认改为枚举全表批注）。 */
+  var lastCommentedColumn = 0
+
+  private val copiedColumnWidths = new mutable.HashSet[(String, Int)]
 
   override def isForwardOnly: Boolean = workbook.isInstanceOf[SXSSFWorkbook]
 
@@ -113,7 +120,8 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
   protected def transformCell(srcCell: CellRef, targetCell: CellRef, context: Context, updateRowHeightFlag: Boolean,
                               cellData: CellData, destSheet: Sheet, destRow: Row): Unit = {
     val sheetData = sheetMap(srcCell.sheetName)
-    if (!ignoreColumnProps) destSheet.setColumnWidth(targetCell.col, sheetData.getColumnWidth(srcCell.col))
+    if (!ignoreColumnProps && copiedColumnWidths.add((targetCell.sheetName, targetCell.col)))
+      destSheet.setColumnWidth(targetCell.col, sheetData.getColumnWidth(srcCell.col))
     if (updateRowHeightFlag && !ignoreRowProps) destRow.setHeight(sheetData.getRowData(srcCell.row).orNull.height.toShort)
     var destCell = destRow.getCell(targetCell.col)
     if (destCell == null) destCell = destRow.createCell(targetCell.col)
@@ -136,8 +144,14 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
     val destSheet = workbook.getSheet(areaRef.sheetName)
     val numMergedRegions = destSheet.getNumMergedRegions
     for (i <- numMergedRegions until 0 by -1) {
-      destSheet.removeMergedRegion(i - 1)
+      val region = destSheet.getMergedRegion(i - 1)
+      if (regionIntersects(region, areaRef)) destSheet.removeMergedRegion(i - 1)
     }
+  }
+
+  private def regionIntersects(region: CellRangeAddress, areaRef: AreaRef): Boolean = {
+    region.getFirstRow <= areaRef.lastCellRef.row && region.getLastRow >= areaRef.firstCellRef.row &&
+      region.getFirstColumn <= areaRef.lastCellRef.col && region.getLastColumn >= areaRef.firstCellRef.col
   }
 
   // this method updates conditional formatting ranges only when the range is inside the passed areaRef
@@ -169,20 +183,6 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
    *
    * @param cellRef
    */
-  final private def findAndRemoveExistingCellRegion(cellRef: CellRef): Unit = {
-    val destSheet: Sheet = workbook.getSheet(cellRef.sheetName)
-    val numMergedRegions = destSheet.getNumMergedRegions
-    var breaked = false
-    for (i <- 0 until numMergedRegions; if !breaked) {
-      val mergedRegion: CellRangeAddress = destSheet.getMergedRegion(i)
-      if (mergedRegion.getFirstRow <= cellRef.row && mergedRegion.getLastRow >= cellRef.row &&
-        mergedRegion.getFirstColumn <= cellRef.col && mergedRegion.getLastColumn >= cellRef.col) {
-        destSheet.removeMergedRegion(i)
-        breaked = true
-      }
-    }
-  }
-
   override def setFormula(cellRef: CellRef, formulaString: String): Unit = {
     if (cellRef == null || cellRef.sheetName == null) return
     val cell = workbook.getOrCreateCell(cellRef)
@@ -198,11 +198,7 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
 
   override def getCommentedCells: collection.Seq[CellData] = {
     val commentedCells = new mutable.ArrayBuffer[CellData]
-    for (sheetData <- sheetMap.values; rowData <- sheetData; if rowData != null) {
-      val row = rowData.row.getRowNum
-      val cellDataList = readCommentsFromSheet(sheetData.sheet, row)
-      commentedCells.addAll(cellDataList)
-    }
+    for (sheetData <- sheetMap.values) commentedCells.addAll(readCommentsFromSheet(sheetData.sheet))
     commentedCells
   }
 
@@ -228,15 +224,14 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
     }
   }
 
-  private def readCommentsFromSheet(sheet: Sheet, rowNum: Int): collection.Seq[CellData] = {
+  private def readCommentsFromSheet(sheet: Sheet): collection.Seq[CellData] = {
     val commentDataCells = new mutable.ArrayBuffer[CellData]
-    for (i <- 0 to lastCommentedColumn) {
-      val cellAddress = new CellAddress(rowNum, i)
-      val comment = sheet.getCellComment(cellAddress)
+    import scala.jdk.javaapi.CollectionConverters.asScala
+    for ((cellAddress, comment) <- asScala(sheet.getCellComments)) {
       if (comment != null && comment.getString != null) {
         val cc = comment.getString.getString
-        if (Strings.isNotBlank(cc)) {
-          val cellData = CellData(new CellRef(sheet.getSheetName, rowNum, i), null)
+        if (Strings.isNotBlank(cc) && (lastCommentedColumn <= 0 || cellAddress.getColumn <= lastCommentedColumn)) {
+          val cellData = CellData(new CellRef(sheet.getSheetName, cellAddress.getRow, cellAddress.getColumn), null)
           cellData.cellComment = comment.getString.getString
           commentDataCells.addOne(cellData)
         }

@@ -346,6 +346,7 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
           evaluationResult match {
             case s: java.sql.Date => cell.setCellValue(s)
             case ld: LocalDate => cell.setCellValue(ld)
+            case jud: java.util.Date => cell.setCellValue(jud)
           }
         case DataType.Time => cell.setCellValue(evaluationResult.asInstanceOf[LocalTime].atDate(LocalDate.now))
         case DataType.DateTime =>
@@ -373,7 +374,10 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
     if (evaluationResult.isInstanceOf[Array[Byte]]) return
     val result: String = if (evaluationResult != null) evaluationResult.toString
     else ""
-    if (cellValue != null && cellValue == result) cell.setCellValue(richTextString)
+    // 只有当求值结果与原单元格文本一致时才回写富文本（保留样式）；
+    // 若 jx:updateCell 等已改写 cellValue，需以改写后的结果为准。
+    val sourceText: String = if (richTextString != null) richTextString.getString else null
+    if (result == sourceText) cell.setCellValue(richTextString)
     else cell.setCellValue(result)
   }
 

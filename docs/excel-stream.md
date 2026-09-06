@@ -140,7 +140,7 @@ try {
 
 ## 测试与性能
 
-`excel/src/test/scala/org/beangle/doc/excel/stream/` 下有两个测试：
+`../excel/src/test/scala/org/beangle/doc/excel/stream` 下有两个测试：
 
 - `StreamingReaderTest`：功能测试（顺序读、`forEachRow`、类型转换、`skipRows`、`currentRowNum`、注释解析），测试数据在内存中动态生成。
 - `StreamingPerformanceTest`：包含两个用例（字符串/日期/数字混合数据）：

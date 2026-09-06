@@ -44,6 +44,10 @@ object Area {
   }
 }
 
+/**
+ * 模板区域：在指定目标位置展开，处理静态单元格复制、指令执行、展开引起的单元格/后续指令位移，
+ * 并记录源单元格与目标位置的映射供公式改写使用。
+ */
 class Area(val startCellRef: CellRef, val size: Size, var transformer: Transformer) {
   var directiveDatas: List[DirectiveData] = List.empty
   var parentDirective: Directive = null

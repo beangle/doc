@@ -45,13 +45,16 @@ object DirectiveFactory {
         case "mergeCells" =>
           check(name, attrs, areas, 1, 1)
           new MergeCellsDirective(areas.head)
+        case other => throw new IllegalArgumentException(s"Unknown directive '$other'")
       }
       attrs foreach { case (k, v) =>
         if (Properties.isWriteable(result, k)) Properties.copy(result, k, v)
       }
       Some(result)
     } catch {
-      case _: Throwable => None
+      case e: Throwable =>
+        logger.error("Cannot create directive '{}' with attributes {} and areas {}", name, attrs, areas.size, e)
+        None
     }
   }
 

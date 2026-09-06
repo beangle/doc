@@ -20,6 +20,7 @@ package org.beangle.doc.excel.template.directive
 import org.beangle.doc.excel.{CellRef, Size}
 import org.beangle.doc.excel.template.Context
 
+/** jx:area：声明顶层模板区域，本身不改变区域大小。 */
 class AreaDirective extends AbstractDirective {
   override def applyAt(cellRef: CellRef, context: Context): Size = Size.Zero
 }

@@ -20,12 +20,16 @@ package org.beangle.doc.excel.template
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.ss.util.CellRangeAddress
 import org.beangle.doc.excel.CellRef
+import org.slf4j.LoggerFactory
 
-import java.util
-import java.util.{Collections, Comparator, List}
 import scala.collection.mutable
 
 object SheetData {
+  private val logger = LoggerFactory.getLogger(classOf[SheetData])
+
+  /** Excel 对单个 sheet 条件格式规则数的软上限，超出后停止追加以避免文件损坏。 */
+  val MaxConditionalFormattingRules = 60000
+
   def createSheetData(sheet: Sheet, transformer: Transformer): SheetData = {
     val sheetData = new SheetData(sheet)
     sheetData.transformer = transformer
@@ -83,6 +87,7 @@ class SheetData(val sheet: Sheet) extends Iterable[RowData] {
 
   val mergedRegions = new mutable.ArrayBuffer[CellRangeAddress]
   private val poiConditionalFormattings = new mutable.ArrayBuffer[PoiConditionalFormatting]
+  private var cfLimitWarned = false
 
   def updateConditionalFormatting(srcCellData: CellData, targetCell: Cell): Unit = {
     for (conditionalFormatting <- poiConditionalFormattings) {
@@ -92,9 +97,16 @@ class SheetData(val sheet: Sheet) extends Iterable[RowData] {
           val newRange: CellRangeAddress = new CellRangeAddress(targetCell.getRowIndex, targetCell.getRowIndex, targetCell.getColumnIndex, targetCell.getColumnIndex)
           val targetSheet: Sheet = targetCell.getSheet
           val targetSheetConditionalFormatting: SheetConditionalFormatting = targetSheet.getSheetConditionalFormatting
-          val sortedRules = conditionalFormatting.rules.sortBy(_.getPriority)
-          for (rule <- sortedRules) {
-            targetSheetConditionalFormatting.addConditionalFormatting(Array[CellRangeAddress](newRange), rule)
+          if (targetSheetConditionalFormatting.getNumConditionalFormattings >= SheetData.MaxConditionalFormattingRules) {
+            if (!cfLimitWarned) {
+              SheetData.logger.warn("Skip copying conditional formatting to sheet '{}': more than {} rules, check jx:each scale",
+                targetSheet.getSheetName, SheetData.MaxConditionalFormattingRules)
+              cfLimitWarned = true
+            }
+          } else {
+            conditionalFormatting.rules.sortBy(_.getPriority).foreach { rule =>
+              targetSheetConditionalFormatting.addConditionalFormatting(Array[CellRangeAddress](newRange), rule)
+            }
           }
         }
       }

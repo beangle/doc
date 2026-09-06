@@ -24,7 +24,7 @@ description := "The Beangle Doc Library"
 homepage := Some(uri("https://beangle.github.io/doc/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.3.2"
-val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.10"
+val beangle_template = "org.beangle.template" % "beangle-template" % "0.2.11"
 
 val commonDeps = Seq(slf4j, logback_classic % "test", beangle_commons, scalatest)
 val websocket_tyrus_client = "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "2.2.2"
@@ -57,7 +57,7 @@ lazy val excel = (project in file("excel"))
     common,
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(poi_ooxml, jexl3, log4j_to_slf4j)
-  ).dependsOn(html)
+  ).dependsOn(html % "optional")
 
 lazy val pdf = (project in file("pdf"))
   .settings(

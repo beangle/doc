@@ -21,6 +21,7 @@ import org.beangle.doc.excel.template.*
 import org.beangle.doc.excel.template.directive.{AbstractDirective, Directive}
 import org.beangle.doc.excel.{CellRef, Size}
 
+/** jx:if：按 condition 表达式真假输出 then(a1)/else(a2) 区域，缺省分支为空白区域。 */
 class IfDirective(var condition: String, a1: Area = Area.Empty, a2: Area = Area.Empty) extends AbstractDirective {
   super.addArea(if (a1 != null) a1 else Area.Empty)
   super.addArea(if (a2 != null) a2 else Area.Empty)

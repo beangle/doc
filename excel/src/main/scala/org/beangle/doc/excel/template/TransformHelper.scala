@@ -24,14 +24,22 @@ import org.beangle.doc.excel.{CellRef, Sheets}
 import java.io.{IOException, InputStream, OutputStream}
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.Using
 
+/**
+ * Excel 模板渲染入口：读取带 jx:* 批注指令的模板，按数据展开并输出 xlsx。
+ *
+ * 调用方负责关闭输出流；传入的模板输入流在本类 transform 调用后会被关闭。
+ *
+ * @see org.beangle.doc.excel.template.directive
+ */
 class TransformHelper(templateStream: InputStream) {
   var deleteTemplateSheet = true
   var processFormulas = true
 
   @throws[IOException]
   def transform(os: OutputStream, datas: collection.Map[String, Any]): Unit = {
-    val transformer = DefaultTransformer.createTransformer(templateStream)
+    val transformer = Using.resource(templateStream)(DefaultTransformer.createTransformer)
     val areaBuilder = new XlsCommentAreaBuilder(transformer)
     val context = new Context(datas)
     val areas = areaBuilder.build()

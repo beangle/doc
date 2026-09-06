@@ -25,6 +25,7 @@ import java.util.regex.{Matcher, Pattern}
 import scala.collection.mutable
 import org.beangle.doc.excel.template.FormulaProcessor.*
 
+/** 默认公式改写实现：按区域展开结果重写每个公式目标单元格的相对引用与默认值。 */
 class DefaultFormulaProcessor extends FormulaProcessor {
   private val logger = LoggerFactory.getLogger(classOf[DefaultFormulaProcessor])
 

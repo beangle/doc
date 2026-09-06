@@ -25,6 +25,7 @@ import org.beangle.doc.excel.template.*
 import java.io.InputStream
 import scala.language.implicitConversions
 
+/** jx:image：将 src 表达式求值出的图片字节写入 area 锚定区域。 */
 class ImageDirective(src: String, imageTypeStr: String, area: Area) extends AbstractDirective {
   var scaleX: Option[Double] = None
   var scaleY: Option[Double] = None
