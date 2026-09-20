@@ -64,13 +64,13 @@ class LibreOfficeLauncher(cfg: Configuration) {
     val home = path.getParent.getParent
     killOffice()
     val builder = LocalOfficeManager.builder.officeHome(home.toFile)
-      .pipeNames(cfg.pipeNames: _*)
+      .pipeNames(cfg.pipeNames*)
       .processTimeout(cfg.processTimeout.toMillis)
       .maxTasksPerProcess(cfg.maxTaskPerProcess)
       .taskExecutionTimeout(cfg.taskTimeout.toMillis)
 
     if (cfg.pipeNames.length < processCount) {
-      builder.portNumbers(Networks.nextFreePorts(2002, processCount - cfg.pipeNames.length): _*)
+      builder.portNumbers(Networks.nextFreePorts(2002, processCount - cfg.pipeNames.length)*)
     }
 
     val officeManager = builder.build()

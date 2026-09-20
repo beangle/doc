@@ -21,13 +21,14 @@ import org.beangle.commons.collection.Collections
 import org.beangle.doc.html.Table.*
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class Table extends DomNode {
   var caption: Option[Caption] = None
   var colGroup: Option[ColGroup] = None
   var thead: Option[THead] = None
   var tbodies: mutable.Buffer[TBody] = Collections.newBuffer[TBody]
-  var widths: Array[Length] = _
+  var widths: Array[Length] = uninitialized
 
   private def calcLayout(): Unit = {
     var headRows: Iterable[Row] = null

@@ -24,6 +24,7 @@ import org.beangle.doc.excel.ExcelStyleRegistry
 
 import java.io.{File, FileOutputStream, OutputStream}
 import scala.util.Using
+import scala.compiletime.uninitialized
 
 /** 流式 Excel 写入器 — 基于 POI SXSSFWorkbook。
  *
@@ -46,7 +47,7 @@ class StreamingWriter(val windowSize: Int = 100, val countPerSheet: Int = 100000
   private val registry = new ExcelStyleRegistry(workbook)
 
   private val sheets = new scala.collection.mutable.ArrayBuffer[StreamingSheet]
-  private var _currentSheet: StreamingSheet = _
+  private var _currentSheet: StreamingSheet = uninitialized
   private var dataRowCount = 0
 
   // 构造时确保有一个默认 Sheet
@@ -57,7 +58,7 @@ class StreamingWriter(val windowSize: Int = 100, val countPerSheet: Int = 100000
     val sxssfSheet =
       if (name == null || name.isBlank) workbook.createSheet()
       else workbook.createSheet(name)
-    val sheet = new StreamingSheet(workbook, sxssfSheet)(registry)
+    val sheet = new StreamingSheet(workbook, sxssfSheet)(using registry)
     sheets += sheet
     dataRowCount = 0
     _currentSheet = sheet

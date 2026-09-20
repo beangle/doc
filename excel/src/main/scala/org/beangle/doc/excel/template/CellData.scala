@@ -33,6 +33,7 @@ import java.util
 import java.util.Date
 import java.util.regex.{Matcher, Pattern}
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 object CellData {
 
@@ -91,23 +92,23 @@ object CellData {
 }
 
 class CellData(val cellRef: CellRef, var cell: Cell) {
-  var attrMap: mutable.Map[String, String] = _
-  var cellValue: Any = _
-  var cellType: DataType = _
-  var cellComment: String = _
-  var formula: String = _
-  var evaluationResult: Any = _
-  protected var targetCellType: DataType = _
+  var attrMap: mutable.Map[String, String] = uninitialized
+  var cellValue: Any = uninitialized
+  var cellType: DataType = uninitialized
+  var cellComment: String = uninitialized
+  var formula: String = uninitialized
+  var evaluationResult: Any = uninitialized
+  protected var targetCellType: DataType = uninitialized
   var formulaStrategy: CellData.FormulaStrategy = CellData.FormulaStrategy.DEFAULT
-  var defaultValue: String = _
-  var area: Area = _
+  var defaultValue: String = uninitialized
+  var area: Area = uninitialized
 
-  private var rowData: RowData = _
-  private var richTextString: RichTextString = _
-  var cellStyle: CellStyle = _
-  private var hyperlink: Hyperlink = _
-  private var comment: Comment = _
-  private var commentAuthor: String = _
+  private var rowData: RowData = uninitialized
+  private var richTextString: RichTextString = uninitialized
+  var cellStyle: CellStyle = uninitialized
+  private var hyperlink: Hyperlink = uninitialized
+  private var comment: Comment = uninitialized
+  private var commentAuthor: String = uninitialized
 
   val targetPos = new mutable.ArrayBuffer[CellRef]
   val targetParentAreaRef = new mutable.ArrayBuffer[AreaRef]

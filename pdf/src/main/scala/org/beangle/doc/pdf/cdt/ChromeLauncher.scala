@@ -27,6 +27,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util
 import java.util.regex.Pattern
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 object ChromeLauncher {
 
@@ -186,9 +187,9 @@ object ChromeLauncher {
 }
 
 class ChromeLauncher(config: Configuration) {
-  private var chromeProcess: Process = _
+  private var chromeProcess: Process = uninitialized
 
-  private var userDataDirPath: Path = _
+  private var userDataDirPath: Path = uninitialized
 
   def launch(): Chrome = {
     ChromeLauncher.findChrome() match

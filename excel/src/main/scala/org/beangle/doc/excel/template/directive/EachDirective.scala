@@ -37,7 +37,7 @@ object EachDirective {
     case Right, Down
   }
 
-case class GroupData(item: Any, items: Iterable[_])
+case class GroupData(item: Any, items: Iterable[?])
 }
 
 /**
@@ -64,7 +64,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
   addArea(area)
 
   override def applyAt(cellRef: CellRef, context: Context): Size = {
-    var itemsCollection: Iterable[_] = null
+    var itemsCollection: Iterable[?] = null
     try {
       itemsCollection = transformToIterableObject(context.evaluator, items, context)
       itemsCollection = orderCollection(itemsCollection)
@@ -85,10 +85,10 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     size
   }
 
-  private def orderCollection(itemsCollection: Iterable[_]): Iterable[_] = {
+  private def orderCollection(itemsCollection: Iterable[?]): Iterable[?] = {
     if (orderBy != null && orderBy.trim.nonEmpty) {
       val comp = PropertyOrdering.by(orderBy)
-      itemsCollection.toBuffer.sorted(comp)
+      itemsCollection.toBuffer.sorted(using comp)
     } else {
       itemsCollection
     }
@@ -98,7 +98,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     if (cl == null) return Seq.empty
     val grouped = cl.groupBy(x => Properties.get[Any](x, groupProperty))
     grouped.map { g =>
-      val items = if (Strings.isNotBlank(groupOrder)) g._2.toBuffer.sorted(new PropertyOrdering(groupOrder))
+      val items = if (Strings.isNotBlank(groupOrder)) g._2.toBuffer.sorted(using new PropertyOrdering(groupOrder))
       else g._2
       GroupData(g._1, items)
     }
@@ -109,7 +109,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
    *
    * @return an iterable object from the {@link Context} under given name
    */
-  private def transformToIterableObject(evaluator: ExprEvaluator, collectionName: String, context: Context): Iterable[_] = {
+  private def transformToIterableObject(evaluator: ExprEvaluator, collectionName: String, context: Context): Iterable[?] = {
     val collectionObject = evaluator.eval(collectionName, context.toMap)
     collectionObject match {
       case null => List.empty
@@ -122,7 +122,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     }
   }
 
-  private def processCollection(context: Context, itemsCollection: Iterable[_], cellRef: CellRef, varName: String): Size = {
+  private def processCollection(context: Context, itemsCollection: Iterable[?], cellRef: CellRef, varName: String): Size = {
     var newWidth: Int = 0
     var newHeight: Int = 0
     var cellRefGenerator: CellRefGenerator = null

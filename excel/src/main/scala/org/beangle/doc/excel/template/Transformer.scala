@@ -22,6 +22,7 @@ import org.beangle.doc.excel.{AreaRef, CellRef, ImageType, Size}
 
 import java.io.{IOException, OutputStream}
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /**
  * Defines interface methods for Excel operations
@@ -71,7 +72,7 @@ trait Transformer {
 abstract class AbstractTransformer extends Transformer {
   var ignoreColumnProps = false
   var ignoreRowProps = false
-  var sheetMap: Map[String, SheetData]=_
+  var sheetMap: Map[String, SheetData]=uninitialized
   var evaluateFormulas = false
   var fullFormulaRecalculationOnOpening = false
 

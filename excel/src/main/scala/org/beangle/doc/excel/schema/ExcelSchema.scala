@@ -27,6 +27,7 @@ import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /** Excel 导入格式
  *
@@ -108,32 +109,32 @@ class ExcelColumn(var name: String) {
   /** 数据类型 */
   var dataType: DataType = DataType.String
   /** 是否是日期 */
-  var isDate: Boolean = _
+  var isDate: Boolean = uninitialized
   /** 是否是时间 */
-  var isTime: Boolean = _
+  var isTime: Boolean = uninitialized
   /** 是否整形 */
-  var isInt: Boolean = _
+  var isInt: Boolean = uninitialized
   /** 是否浮点型 */
-  var isDecimal: Boolean = _
+  var isDecimal: Boolean = uninitialized
   /** 是否布尔型 */
-  var isBool: Boolean = _
+  var isBool: Boolean = uninitialized
 
   /** 引用数据 */
-  var refs: collection.Seq[String] = _
+  var refs: collection.Seq[String] = uninitialized
   /** 本列的数据(直接输出到本列的标题下方) */
-  var datas: collection.Seq[String] = _
+  var datas: collection.Seq[String] = uninitialized
 
   /** 约束的第一个公式 */
-  var formular1: String = _
+  var formular1: String = uninitialized
   /** 约束的第二个公式 */
   var formular2: Option[String] = None
 
   /** 文本长度 */
   var length: Option[Int] = None
   /** 是否必须 */
-  var required: Boolean = _
+  var required: Boolean = uninitialized
   /** 是否唯一 */
-  var unique: Boolean = _
+  var unique: Boolean = uninitialized
 
   /** 数据格式 */
   var format: Option[String] = None
@@ -266,7 +267,7 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def asType(clazz: Class[_]): this.type = {
+  def asType(clazz: Class[?]): this.type = {
     asType(DataType.toType(clazz))
   }
 

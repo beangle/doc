@@ -21,6 +21,7 @@ import org.beangle.commons.lang.Strings
 
 import java.time.Duration
 import scala.math.BigDecimal.RoundingMode
+import scala.compiletime.uninitialized
 
 object PrintOptions {
   def defaultOptions: PrintOptions = {
@@ -42,7 +43,7 @@ class PrintOptions {
   /** 缩放比 */
   var scale: Double = 1.0
   /** 是否打印页眉页脚 */
-  var printHeaderFooter: Boolean = _
+  var printHeaderFooter: Boolean = uninitialized
   /** 打印拷贝数 */
   var copies: Int = 1
   /** 打印范围，例如1-5, 8, 11-13 */

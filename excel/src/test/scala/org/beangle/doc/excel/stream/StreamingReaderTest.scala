@@ -255,7 +255,7 @@ class StreamingReaderTest extends AnyFunSuite with Matchers {
     Using.resource(new StreamingReader(
       ClassLoaders.getResourceAsStream("sample.xlsx", classOf[StreamingReaderTest]).get, 0)) { reader =>
       val comments = reader.comments
-      comments shouldBe a[Map[_, _]]
+      comments shouldBe a[Map[?, ?]]
       comments.get("A1") shouldBe defined
       comments("A1") should include("jx:each")
     }

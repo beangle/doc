@@ -30,6 +30,7 @@ import java.text.NumberFormat
 import java.time.*
 import javax.xml.stream.{XMLInputFactory, XMLStreamConstants}
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /** 流式 Excel 读取器 — 基于 StAX 逐行解析，内存中只保留当前行。
  *
@@ -47,7 +48,7 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
   private val xssfReader = new XSSFReader(pkg)
 
   private val sheetIterator = xssfReader.getSheetsData.asInstanceOf[XSSFReader.SheetIterator]
-  private var currentSheetStream: InputStream = _
+  private var currentSheetStream: InputStream = uninitialized
 
   private var sheetIndex = 0
   while (sheetIndex < sheetNum && sheetIterator.hasNext) {
@@ -74,7 +75,7 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
     if (_comments == null) _comments = parseComments()
     _comments
   }
-  private var _comments: Map[String, String] = _
+  private var _comments: Map[String, String] = uninitialized
 
   // StAX reader
   private val staxReader = {

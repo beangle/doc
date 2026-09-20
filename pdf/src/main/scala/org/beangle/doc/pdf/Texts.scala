@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.{IEventData, TextRenderInfo}
 import com.itextpdf.kernel.pdf.canvas.parser.listener.LocationTextExtractionStrategy
 import com.itextpdf.kernel.pdf.canvas.parser.{EventType, PdfTextExtractor}
 import org.beangle.commons.collection.Collections
+import scala.compiletime.uninitialized
 
 object Texts {
 
@@ -34,7 +35,7 @@ object Texts {
   class CustomLocationTextExtractionStrategy(searchString: String) extends LocationTextExtractionStrategy {
     val locations = Collections.newBuffer[(Float, Float)]
     var index = 0
-    var loc: com.itextpdf.kernel.geom.Vector = _
+    var loc: com.itextpdf.kernel.geom.Vector = uninitialized
 
     override def eventOccurred(data: IEventData, `type`: EventType): Unit = {
       super.eventOccurred(data, `type`)

@@ -25,6 +25,7 @@ import org.beangle.doc.pdf.{Logger, PdfMaker}
 
 import java.io.File
 import java.net.URI
+import scala.compiletime.uninitialized
 
 object ChromePdfMaker {
   def isAvailable: Boolean = {
@@ -36,7 +37,7 @@ object ChromePdfMaker {
 class ChromePdfMaker extends PdfMaker {
 
   /** Lazily started; recreated after explicit shutdown or a dead process. */
-  private var chrome: Chrome = _
+  private var chrome: Chrome = uninitialized
 
   /** Max idle tabs kept after convert; excess returned tabs are closed. */
   var maxIdles: Int = 2

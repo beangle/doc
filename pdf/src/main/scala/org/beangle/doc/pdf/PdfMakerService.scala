@@ -31,6 +31,7 @@ import java.io.File
 import java.net.URI
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
+import scala.compiletime.uninitialized
 
 object PdfMakerService {
 
@@ -61,7 +62,7 @@ class PdfMakerService extends Initializing, Disposable, Logging {
 
   private var inFlight = 0
 
-  private var maker: PdfMaker = _
+  private var maker: PdfMaker = uninitialized
 
   def print(uri: URI, pdf: File): Boolean = {
     print(uri, pdf, PrintOptions.defaultOptions)

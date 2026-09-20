@@ -21,13 +21,14 @@ import org.beangle.doc.pdf.Logger
 
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import scala.compiletime.uninitialized
 
 /** One browser tab connected over CDP WebSocket. */
 class ChromePage(val idx: Int, val pageId: String, val socketUrl: String) {
   private val socket = WebSocket(socketUrl)
-  private var frameId: String = _
-  private var loadLatch: CountDownLatch = _
-  private var enabled: Boolean = _
+  private var frameId: String = uninitialized
+  private var loadLatch: CountDownLatch = uninitialized
+  private var enabled: Boolean = uninitialized
 
   /** Max wait after load for async requests to finish (dynamic pages). */
   private val NetworkIdleTimeout = Duration.ofSeconds(30)

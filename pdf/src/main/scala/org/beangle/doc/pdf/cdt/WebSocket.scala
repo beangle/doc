@@ -32,6 +32,7 @@ import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import scala.compiletime.uninitialized
 
 object WebSocket {
 
@@ -51,13 +52,13 @@ object WebSocket {
 
 class WebSocket(uri: URI) {
 
-  private var session: Session = _
+  private var session: Session = uninitialized
 
   private val sendLock = new ReentrantLock()
 
-  private var invokeLatch: CountDownLatch = _
+  private var invokeLatch: CountDownLatch = uninitialized
 
-  private var res: Response = _
+  private var res: Response = uninitialized
 
   private val handlers = Collections.newMap[String, () => Unit]
 

@@ -30,6 +30,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.*
 import java.io.File
 import scala.jdk.javaapi.CollectionConverters.asScala
 import scala.util.Random
+import scala.compiletime.uninitialized
 
 object DocParser {
 
@@ -64,7 +65,7 @@ class DocParser(document: html.Document) {
   //缺省字体大小 10.5pt，五号字体
   private val defaultFontSize = 10.5f
 
-  private var numberingReader: NumberingReader = _
+  private var numberingReader: NumberingReader = uninitialized
 
   def parse(doc: XWPFDocument): Unit = {
     val body = document.body

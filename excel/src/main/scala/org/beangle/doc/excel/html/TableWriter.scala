@@ -23,6 +23,7 @@ import org.apache.poi.xssf.usermodel.*
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.doc.html.*
+import scala.compiletime.uninitialized
 
 /** 将HTML中的表格，转换到Excel中
  */
@@ -66,7 +67,7 @@ class TableWriter(table: Table, sheet: XSSFSheet) {
   private val styles = Collections.newMap[String, XSSFCellStyle]
   private val fonts = Collections.newMap[String, XSSFFont]
   private val defaultStyle = buildDefaultStyle(sheet.getWorkbook)
-  private var widths: Array[Length] = _
+  private var widths: Array[Length] = uninitialized
 
   private def buildDefaultStyle(wb: XSSFWorkbook): XSSFCellStyle = {
     val style = wb.createCellStyle
