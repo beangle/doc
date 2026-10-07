@@ -91,6 +91,11 @@ object ChromeLauncher {
       .add("run-all-compositor-stages-before-draw", true)
       // Chrome 149+ blocks CDP navigation to loopback aliases without this flag.
       .add("disable-features", "LocalNetworkAccessChecks")
+      // chrome-headless-shell defaults to hinted text, Chrome does not. Hinting distorts
+      // glyph outlines and advances, so PDFs look thinner and lay out differently.
+      .add("font-render-hinting", "none")
+      // Keep colors identical to Chrome regardless of the host display profile.
+      .add("force-color-profile", "srgb")
 
     v.disableGpu().hideScrollbars().muteAudio()
     v

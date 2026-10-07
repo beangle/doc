@@ -34,5 +34,11 @@ class ChromeLauncherTest extends AnyFunSpec, Matchers {
       args should contain("--hide-scrollbars")
       args should contain("--mute-audio")
     }
+
+    it("keeps text and color rendering identical to Chrome") {
+      val args = ChromeLauncher.defaultsArgs().build()
+      args should contain("--font-render-hinting=none")
+      args should contain("--force-color-profile=srgb")
+    }
   }
 }
