@@ -137,5 +137,59 @@ CentOS 7 的 glibc 为 2.17，而现代 Chrome / chrome-headless-shell 要求更
    - `/usr/lib/chromium/chromium-headless-shell`（Debian 包）
    - `/usr/lib64/chromium-browser/headless_shell`（Fedora/EPEL 的 chromium-headless 包）
 2. **启动参数**：`defaultsArgs()` 统一不传 `--headless`（shell 本身永远无头），其余渲染参数保持一致。
+3. **渲染一致性参数**（shell 与完整 Chrome 默认值不同，必须显式指定）：
+   - `--font-render-hinting=none`：shell 的默认渲染结果等价于 `--font-render-hinting=medium`/`full`（三者在 300dpi 下逐像素相同），而 Chrome 的默认结果等价于 `none`/`slight`。同一页面实测（两者都是 Skia/PDF m152，排除版本差异）：shell 默认 vs Chrome 有 5018 个像素不同（0.06%）、30 个词里 10 个词坐标不同（步进与断行漂移）；加上该参数后 shell 与 Chrome **逐像素一致、词坐标完全相同**。hinting 会改写字形轮廓与字符步进，所以不加会出现"同一段文字宽度不同、断行漂移"，小字号尤其发闷。注意这与宋体点阵无关：该对照页用的是 Noto CJK，全部是矢量字形。
+   - `--force-color-profile=srgb`：把默认色彩配置显式化。注意 headless 默认**已经是 sRGB**——实测同一个彩色页面加不加该参数输出逐字节相同（`md5` 一致），改用 `--force-color-profile=display-p3-d65` 才会改变输出。所以它只是防止宿主/未来版本改变默认值的保险，本身并不"修复"任何颜色问题。
 
 因此按第 3 节把 shell 装到 `/opt/chrome-headless-shell` 后，程序无需配置即可直接使用。
+
+## 8. 与完整 Chrome 对比验证（服务器上自查）
+
+怀疑"PDF 不如 Chrome 清晰、字体不对"时，用同一页面分别跑三个命令比对。shell 与 Chrome 的差异只应体现在页眉页脚（浏览器绘制的那一行），正文必须一致：
+
+```bash
+BASE="--no-sandbox --disable-gpu --hide-scrollbars --no-first-run"
+URL="https://your-site/report"
+SHELL=/opt/chrome-headless-shell/chrome-headless-shell-linux64/chrome-headless-shell
+
+# A. shell 默认参数（升级后的现状）
+$SHELL $BASE --user-data-dir=/tmp/ud-a --print-to-pdf=/tmp/a-default.pdf "$URL"
+
+# B. shell + 程序新增的两个参数（期望与 C 一致）
+$SHELL $BASE --font-render-hinting=none --force-color-profile=srgb \
+  --user-data-dir=/tmp/ud-b --print-to-pdf=/tmp/b-fixed.pdf "$URL"
+
+# C. 完整 Chrome，作为基准
+/usr/bin/google-chrome --headless=new $BASE \
+  --user-data-dir=/tmp/ud-c --print-to-pdf=/tmp/c-chrome.pdf "$URL"
+
+# 1) 字体是否相同：看字体名与 Type。名字不同说明是 fontconfig 字体解析差异（查字体包与 fc-match），
+#    名字相同但 "Type" 不同（Type 3 / CID TrueType）说明是字形来源差异。
+pdffonts /tmp/a-default.pdf; pdffonts /tmp/b-fixed.pdf; pdffonts /tmp/c-chrome.pdf
+
+# 2) 像素是否一致：B 与 C 应完全相同（页眉页脚带时间戳时除外）
+pdftoppm -r 300 -png -f 1 -l 1 /tmp/b-fixed.pdf /tmp/b
+pdftoppm -r 300 -png -f 1 -l 1 /tmp/c-chrome.pdf /tmp/c
+cmp /tmp/b-1.png /tmp/c-1.png && echo "B == C" || echo "B != C"
+```
+
+排版类差异还可以用文字坐标定位，例如：
+
+```bash
+pdftotext -bbox /tmp/b-fixed.pdf /tmp/b.xml && pdftotext -bbox /tmp/c-chrome.pdf /tmp/c.xml
+diff /tmp/b.xml /tmp/c.xml
+```
+
+注意：CI/生产环境应保证 shell 与 Chrome 版本号一致，版本不同本身就会让 Skia 字体栈输出漂移。
+
+## 9. 正文发虚：中文字体的内嵌点阵
+
+如果 PDF 正文发虚、字形像屏幕点阵字（粗体标题尤其明显），**不是 shell 的问题**，而是字体自带的点阵字模（典型：宋体 `simsun.ttc` 的 `EBDT`/`EBLC`）被 Chromium/Skia 用上了。
+
+**完整说明见专题文档 [`pdf-cjk-font.md`](pdf-cjk-font.md)**，摘要：
+
+- **判定**：`python3 docs/tools/pdf-glyph-report.py out.pdf`，`bitmap` 大于 0 即确诊；`pdffonts` 里 `SimSun` 会是大量 `Type 3`。
+- **原因**：`simsun.ttc` 有 6 个内嵌点阵 strike（ppem 12~17），命中时 FreeType 返回位图字形，Skia 只能输出 `Type 3` 位图；宋体没有 Bold 字面，`font-weight:bold` 走合成粗体又把位图放大。
+- **改 fontconfig 无效**：Chromium 不读 `embeddedbitmap`，`/etc/fonts/local.conf` 里设 `false` 不起作用（实测新生成的 PDF 与原文件仅时间戳不同）。
+- **修复**：`python3 docs/tools/fix-font-bitmaps.py` 一步到位——导出无点阵 TTF → 装到 `/usr/local/share/fonts/simsun/` → 清掉同族的原 `.ttc` 与 `.bak`（只改名成 `xxx.bak` 无效，fontconfig 不看扩展名，会同时加载两份）→ `fc-cache -f` → 校验一个族只剩一份。先用 `--dry-run` 看计划、`--yes` 直接执行；默认删除原件，要留备份用 `--mode move`。改完**重启 Java 应用**。字形轮廓不变，且与浏览器版本无关。
+- **注意**：`chrome-headless-shell` 与完整 Chrome 在同一台机器上输出逐字节同构，遇到这类问题先查字体，别只盯着 shell。
