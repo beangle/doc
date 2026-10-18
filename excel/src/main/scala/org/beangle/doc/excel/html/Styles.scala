@@ -36,12 +36,10 @@ object Styles {
           case _ => BorderStyle.THIN
       val borderColor =
         if (data.color.startsWith("#") && data.color.length == 7) {
-          val c = data.color
-          new XSSFColor(Array[Byte](java.lang.Byte.valueOf(c.substring(1, 3)),
-            java.lang.Byte.valueOf(c.substring(3, 5)),
-            java.lang.Byte.valueOf(c.substring(5, 7))))
+          val rgb = Integer.parseInt(data.color.substring(1), 16)
+          new XSSFColor(Array[Byte](0xFF.toByte, (rgb >> 16).toByte, (rgb >> 8).toByte, rgb.toByte))
         } else {
-          new XSSFColor(Array[Byte](0, 0, 0))
+          new XSSFColor(Array[Byte](0xFF.toByte, 0, 0, 0))
         }
       Some((borderStyle, borderColor))
   }

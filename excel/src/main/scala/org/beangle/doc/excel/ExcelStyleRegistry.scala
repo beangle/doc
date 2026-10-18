@@ -27,7 +27,7 @@ import java.text.{DecimalFormat, NumberFormat}
 
 object ExcelStyleRegistry {
   def defaultFormat(dt: DataType): String = {
-    defaults.getOrElse(dt, "")
+    defaults.getOrElse(dt, "General")
   }
 
   val defaults = Map(String -> "@", Boolean -> "@", Short -> "0", Integer -> "0", Long -> "#,##0",

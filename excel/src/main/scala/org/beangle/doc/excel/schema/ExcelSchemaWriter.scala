@@ -239,7 +239,7 @@ object ExcelSchemaWriter {
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
 
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
-    val rgb = Array(221.toByte, 217.toByte, 196.toByte)
+    val rgb = Array(0xFF.toByte, 221.toByte, 217.toByte, 196.toByte)
     style.setFillForegroundColor(new XSSFColor(rgb, new DefaultIndexedColorMap))
 
     style.setBorderTop(BorderStyle.THIN)
