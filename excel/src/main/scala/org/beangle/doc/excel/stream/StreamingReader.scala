@@ -93,7 +93,7 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
 
   def getSheetName: String = if (sheetIterator != null) sheetIterator.getSheetName else null
 
-  /** 读取下一行数据，自动跳过前 skipRows 行。 */
+  /** 读取下一行数据，自动跳过前 skipRows 行。空白单元格以 null 占位。 */
   def readRow(): Option[Array[Any]] = {
     while (_currentRowNum < skipRows) {
       readRawRow()
@@ -104,9 +104,14 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
     row
   }
 
-  /** 读取下一行数据并按指定类型转换。 */
+  /** 读取下一行数据并按指定类型转换。返回数组长度与 types 一致，空白单元格为 null。 */
   def readRow(types: Array[DataType]): Option[Array[Any]] = {
-    readRow().map(_.zip(types).map { (value, dataType) => convertValue(value, dataType) })
+    readRow().map { row =>
+      Array.tabulate(types.length) { index =>
+        val value = if (index < row.length) row(index) else null
+        convertValue(value, types(index))
+      }
+    }
   }
 
   /** 回调式流式处理：自动跳过前 skipRows 行，只对数据行调用 callback。 */
@@ -139,7 +144,14 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
           cells.clear()
         case XMLStreamConstants.START_ELEMENT if staxReader.getLocalName == "c" && inRow =>
           val cellType = staxReader.getAttributeValue(null, "t")
-          cells += readCellValue(cellType)
+          val colIndex = columnIndex(staxReader.getAttributeValue(null, "r"))
+          val value = readCellValue(cellType)
+          if (colIndex < 0) {
+            cells += value
+          } else {
+            while (cells.length < colIndex) cells += null
+            if (colIndex < cells.length) cells(colIndex) = value else cells += value
+          }
         case XMLStreamConstants.END_ELEMENT if staxReader.getLocalName == "row" && inRow =>
           inRow = false
           done = true
@@ -150,6 +162,28 @@ class StreamingReader(is: InputStream, sheetNum: Int = 0) extends AutoCloseable 
       }
     }
     if (cells.nonEmpty) Some(cells.toArray) else None
+  }
+
+  /** 从单元格引用（如 A1、AB12）解析出 0-based 列号，缺少引用时返回 -1。 */
+  private def columnIndex(cellRef: String): Int = {
+    if (cellRef == null) return -1
+    var index = 0
+    var i = 0
+    var found = false
+    while (i < cellRef.length) {
+      val c = cellRef.charAt(i)
+      if (c >= 'A' && c <= 'Z') {
+        index = index * 26 + (c - 'A' + 1)
+        found = true
+      } else if (c >= 'a' && c <= 'z') {
+        index = index * 26 + (c - 'a' + 1)
+        found = true
+      } else if (found) {
+        i = cellRef.length
+      }
+      i += 1
+    }
+    if (found) index - 1 else -1
   }
 
   private def readCellValue(cellType: String): Any = {

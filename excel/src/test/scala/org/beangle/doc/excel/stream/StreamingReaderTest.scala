@@ -224,6 +224,52 @@ class StreamingReaderTest extends AnyFunSuite with Matchers {
     }
   }
 
+  test("readRow preserves blank cell positions") {
+    val bytes = minimalXlsx(
+      """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        |<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
+        |<row r="1">
+        |<c r="A1" t="inlineStr"><is><t>A</t></is></c>
+        |<c r="C1"><v>3</v></c>
+        |<c r="F1"><v>6</v></c>
+        |</row></sheetData></worksheet>""".stripMargin)
+    Using.resource(new StreamingReader(new ByteArrayInputStream(bytes))) { reader =>
+      val row = reader.readRow()
+      row shouldBe defined
+      val got = row.get
+      got should have length 6
+      got(0) shouldBe "A"
+      (got(1) == null) shouldBe true
+      got(2) shouldBe 3.0
+      (got(3) == null) shouldBe true
+      (got(4) == null) shouldBe true
+      got(5) shouldBe 6.0
+    }
+  }
+
+  test("readRow with types pads blank trailing cells to the declared width") {
+    val bytes = minimalXlsx(
+      """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        |<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
+        |<row r="1">
+        |<c r="A1" t="inlineStr"><is><t>A</t></is></c>
+        |<c r="C1"><v>3</v></c>
+        |</row></sheetData></worksheet>""".stripMargin)
+    Using.resource(new StreamingReader(new ByteArrayInputStream(bytes))) { reader =>
+      val types = Array.fill[DataType](6)(DataType.String)
+      val row = reader.readRow(types)
+      row shouldBe defined
+      val got = row.get
+      got should have length 6
+      got(0) shouldBe "A"
+      (got(1) == null) shouldBe true
+      got(2) shouldBe "3"
+      (got(3) == null) shouldBe true
+      (got(4) == null) shouldBe true
+      (got(5) == null) shouldBe true
+    }
+  }
+
   test("skipRows skips specified number of rows") {
     Using.resource(openReader()) { reader =>
       var totalRows = 0
