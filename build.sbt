@@ -48,7 +48,7 @@ lazy val docx = (project in file("docx"))
     common,
     libraryDependencies ++= commonDeps,
     libraryDependencies ++= Seq(poi_ooxml, beangle_template, freemarker, log4j_to_slf4j),
-    libraryDependencies ++= Seq(jodconverter_local % "optional", libreoffice % "optional")
+    libraryDependencies ++= Seq(libreoffice % "optional")
   ).dependsOn(html)
 
 lazy val excel = (project in file("excel"))

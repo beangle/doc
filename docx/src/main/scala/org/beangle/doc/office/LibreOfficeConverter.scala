@@ -17,38 +17,89 @@
 
 package org.beangle.doc.office
 
+import com.sun.star.beans.PropertyValue
+import com.sun.star.frame.{XComponentLoader, XStorable}
+import com.sun.star.lang.XComponent
+import com.sun.star.uno.{UnoRuntime, XComponentContext}
 import org.beangle.commons.bean.{Disposable, Initializing}
 import org.beangle.doc.office.LibreOfficeLauncher.Configuration
-import org.jodconverter.core.document.DefaultDocumentFormatRegistry
-import org.jodconverter.core.office.InstalledOfficeManagerHolder
-import org.jodconverter.local.LocalConverter
 
 import java.io.File
+import scala.compiletime.uninitialized
 
-/** 利用LibreOffice转换docx到pdf
+/** 利用LibreOffice转换docx到pdf（单进程 UNO 直连）
  */
 class LibreOfficeConverter extends Initializing, Disposable {
-  var processCount: Int = 1
-  var maxTaskPerProcess: Int = 50
+  /** 0 means pick a free port starting from 2002. */
+  var port: Int = 0
+
+  private var launcher: Option[LibreOfficeLauncher] = None
+  private var context: XComponentContext = uninitialized
 
   override def init(): Unit = {
     val cfg = new Configuration
-    cfg.maxTaskPerProcess = maxTaskPerProcess
-    val launcher = new LibreOfficeLauncher(cfg)
-    val manager = launcher.launch(processCount)
-    InstalledOfficeManagerHolder.setInstance(manager)
+    cfg.port = port
+    val l = new LibreOfficeLauncher(cfg)
+    context = l.launch()
+    launcher = Some(l)
   }
 
   def convertToPdf(input: File, output: File): Unit = {
-    val builder = LocalConverter.builder()
-    builder.build().convert(input).to(output).as(DefaultDocumentFormatRegistry.PDF).execute()
-  }
+    require(null != context, "LibreOfficeConverter is not initialized, call init() first")
+    val desktop = UnoRuntime.queryInterface(
+      classOf[XComponentLoader],
+      context.getServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", context)
+    )
+    val hidden = new PropertyValue
+    hidden.Name = "Hidden"
+    hidden.Value = true
 
-  override def destroy(): Unit = {
-    val manager = InstalledOfficeManagerHolder.getInstance()
-    if (null != manager) {
-      manager.stop()
+    val doc = desktop.loadComponentFromURL(fileUrl(input), "_blank", 0, Array(hidden))
+    if (null == doc) {
+      throw new RuntimeException(s"Cannot load document: ${input.getAbsolutePath}")
+    }
+    try {
+      val storable = UnoRuntime.queryInterface(classOf[XStorable], doc)
+      val filter = new PropertyValue
+      filter.Name = "FilterName"
+      filter.Value = pdfFilterName(input.getName)
+      val overwrite = new PropertyValue
+      overwrite.Name = "Overwrite"
+      overwrite.Value = true
+      storable.storeToURL(fileUrl(output), Array(filter, overwrite))
+    } finally {
+      closeQuietly(doc)
     }
   }
 
+  override def destroy(): Unit = {
+    launcher.foreach(_.shutdown())
+    launcher = None
+    context = null
+  }
+
+  private def fileUrl(f: File): String = f.getAbsoluteFile.toURI.toString
+
+  private def pdfFilterName(fileName: String): String = {
+    val lower = fileName.toLowerCase
+    if (lower.endsWith(".doc") || lower.endsWith(".docx") || lower.endsWith(".odt") ||
+      lower.endsWith(".txt") || lower.endsWith(".html") || lower.endsWith(".htm") || lower.endsWith(".rtf")) {
+      "writer_pdf_Export"
+    } else if (lower.endsWith(".xls") || lower.endsWith(".xlsx") || lower.endsWith(".ods") ||
+      lower.endsWith(".csv")) {
+      "calc_pdf_Export"
+    } else if (lower.endsWith(".ppt") || lower.endsWith(".pptx") || lower.endsWith(".odp")) {
+      "impress_pdf_Export"
+    } else {
+      "writer_pdf_Export"
+    }
+  }
+
+  private def closeQuietly(doc: XComponent): Unit = {
+    try {
+      doc.dispose()
+    } catch {
+      case _: Throwable =>
+    }
+  }
 }
