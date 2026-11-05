@@ -5,7 +5,7 @@
     "Generated from the poi-ooxml-lite jar: *Impl -> allDeclaredConstructors, *$Enum -> allDeclaredFields,",
     "other (interface) types -> class only. Resources cover org/apache/poi|xmlbeans **/*.xsb,",
     "org/apache/poi/ss/formula/function/functionMetadata*.txt and the xmlbeans regex bundle.",
-    "Verified 2026-09-16 against poi 5.5.1 / poi-ooxml 5.5.1 / poi-ooxml-lite 5.5.1 / xmlbeans 5.3.0",
+    "Verified 2026-11-05 against poi 6.0.0 / poi-ooxml 6.0.0 / poi-ooxml-lite 6.0.0 / xmlbeans 5.4.1",
     "(every listed type exists) and validated against reachability-metadata-schema-v1.2.0.json (GraalVM 25).",
     "This file is intentionally kept identical in the excel and docx modules: both depend on poi-ooxml,",
     "and the two modules are not guaranteed to share a common runtime dependency. See docs/native.md."
@@ -1709,6 +1709,14 @@
       "allDeclaredConstructors": true
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STDepthPercentUShortImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STDepthPercentWithSymbolImpl",
+      "allDeclaredConstructors": true
+    },
+    {
       "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STDispBlanksAsImpl",
       "allDeclaredConstructors": true
     },
@@ -1730,6 +1738,14 @@
     },
     {
       "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STHPercentImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STHPercentUShortImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.chart.impl.STHPercentWithSymbolImpl",
       "allDeclaredConstructors": true
     },
     {
@@ -2113,6 +2129,9 @@
     },
     {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.CTStyleMatrixReference"
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.CTSupplementalFont"
     },
     {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.CTSystemColor"
@@ -2881,6 +2900,10 @@
       "allDeclaredConstructors": true
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTPath2DQuadBezierToImpl",
+      "allDeclaredConstructors": true
+    },
+    {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTPathShadePropertiesImpl",
       "allDeclaredConstructors": true
     },
@@ -2974,6 +2997,10 @@
     },
     {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTStyleMatrixReferenceImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTSupplementalFontImpl",
       "allDeclaredConstructors": true
     },
     {
@@ -3949,6 +3976,9 @@
       "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STColorType"
     },
     {
+      "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STConformanceClass"
+    },
+    {
       "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STConformanceClass$Enum",
       "allDeclaredFields": true
     },
@@ -4095,6 +4125,10 @@
     },
     {
       "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl.STPercentageImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl.STPositivePercentageImpl",
       "allDeclaredConstructors": true
     },
     {
@@ -6725,7 +6759,13 @@
       "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.CTComments"
     },
     {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.CTCustomXmlCell"
+    },
+    {
       "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.CTCustomXmlPr"
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.CTCustomXmlRow"
     },
     {
       "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.CTCustomXmlRun"
@@ -7705,7 +7745,15 @@
       "allDeclaredConstructors": true
     },
     {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTCustomXmlCellImpl",
+      "allDeclaredConstructors": true
+    },
+    {
       "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTCustomXmlPrImpl",
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTCustomXmlRowImpl",
       "allDeclaredConstructors": true
     },
     {

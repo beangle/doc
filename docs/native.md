@@ -12,7 +12,7 @@
 
 | 路径 | 内容 |
 | --- | --- |
-| `excel/src/main/resources/META-INF/native-image/poi-ooxml/reachability-metadata.json` | 2446 条反射 + 72 条资源 |
+| `excel/src/main/resources/META-INF/native-image/poi-ooxml/reachability-metadata.json` | 2459 条反射 + 72 条资源 |
 | `docx/src/main/resources/META-INF/native-image/poi-ooxml/reachability-metadata.json` | 与上一份逐字节一致 |
 
 - **自动发现**：classpath 上 `META-INF/native-image/**/reachability-metadata.json` 会被
@@ -33,10 +33,10 @@
 
 ## 核实方式（可复现）
 
-以 `poi 5.5.1` / `poi-ooxml 5.5.1` / `poi-ooxml-lite 5.5.1` / `xmlbeans 5.3.0` 为例：
+以 `poi 6.0.0` / `poi-ooxml 6.0.0` / `poi-ooxml-lite 6.0.0` / `xmlbeans 5.4.1` 为例：
 
-1. **类型存在性**：收集这四个 jar 中全部 `.class` 的内名集合，逐个比对元数据里的 2446 个
-   `type`，期望 0 缺失（2026-09-16 核实：0 缺失，无过期条目）。
+1. **类型存在性**：收集这四个 jar 中全部 `.class` 的内名集合，逐个比对元数据里的 2459 个
+   `type`，期望 0 缺失（2026-11-05 核实：0 缺失，无过期条目）。
 2. **schema 校验**：用 GraalVM 25 的
    `reachability-metadata-schema-v1.2.0.json` 校验（`jsonschema.validate` 通过）；
    顶层只有 `comment`/`reflection`/`resources`/`foreign` 四个合法键。
