@@ -2,7 +2,7 @@
 
 面向 `beangle-doc` 的 pdf 模块（`org.beangle.doc.pdf`）在 Linux 服务器上通过 Chrome / chrome-headless-shell 渲染 HTML 为 PDF 的场景。
 
-相关文档：`chrome-headless-shell-install.md`（二进制安装、shell 与 Chrome 的参数一致性）；本文只讲**中文字体导致的 PDF 质量问题**。
+相关文档：[chrome-headless-shell 安装指南](https://duantihua.github.io/tech/linux/chrome-headless-shell-install.html)（二进制安装、各发行版说明）；[chrome-headless-shell 与 beangle-doc 集成](chrome-headless-shell-integration.md)（查找路径、启动参数）；本文只讲**中文字体导致的 PDF 质量问题**。
 
 ## 1. 现象
 
